@@ -1,0 +1,15 @@
+{
+  "name": "lein-backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Backend de Lein — tutor de speaking por voz de LBrain Academy",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.69.0",
+    "dotenv": "^16.4.5"
+  }
+}

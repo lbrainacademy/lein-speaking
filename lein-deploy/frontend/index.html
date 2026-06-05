@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Lein · LBrain Academy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{ --yellow:#FFC83D; --orange:#FF8C42; --deep:#E5631C; --bg:#141019; }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    font-family:'DM Sans',system-ui,sans-serif; color:#f3ece4;
+    background:
+      radial-gradient(900px 600px at 50% 38%, rgba(255,140,66,.14), transparent 60%),
+      radial-gradient(700px 500px at 50% 120%, rgba(229,99,28,.15), transparent 60%),
+      var(--bg);
+    min-height:100dvh; overflow-x:hidden; position:relative;
+  }
+  body::after{content:"";position:fixed;inset:0;pointer-events:none;opacity:.04;
+    background-image:radial-gradient(#fff 1px,transparent 1px);background-size:3px 3px;}
+
+  .screen{min-height:100dvh;display:none;flex-direction:column;align-items:center;
+    justify-content:center;gap:22px;padding:28px;text-align:center}
+  .screen.active{display:flex}
+
+  /* ---------- Avatar (de lein-identidad-cerebro.html) ---------- */
+  .stage{position:relative;width:200px;height:200px;display:grid;place-items:center}
+  .ring{position:absolute;border-radius:50%;border:2px solid rgba(255,140,66,.4);
+    width:170px;height:170px;opacity:0}
+  .listening .ring{animation:pin 1.6s ease-out infinite}
+  .listening .ring:nth-child(2){animation-delay:.5s}
+  .listening .ring:nth-child(3){animation-delay:1s}
+  @keyframes pin{0%{transform:scale(1.5);opacity:0}40%{opacity:.6}100%{transform:scale(.85);opacity:0}}
+  .talking .ring{animation:pout 1.1s ease-out infinite}
+  .talking .ring:nth-child(2){animation-delay:.36s}
+  .talking .ring:nth-child(3){animation-delay:.72s}
+  @keyframes pout{0%{transform:scale(.85);opacity:.7}100%{transform:scale(1.7);opacity:0}}
+  .mark{position:relative;width:128px;height:128px;animation:breathe 4s ease-in-out infinite}
+  @keyframes breathe{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-6px) scale(1.015)}}
+  .listening .mark{animation:breathe 2.4s ease-in-out infinite}
+  .talking .mark{animation:talk .5s ease-in-out infinite}
+  @keyframes talk{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+  .mark svg{width:100%;height:100%;filter:drop-shadow(0 0 22px rgba(255,140,66,.55))}
+  .talking .mark svg{filter:drop-shadow(0 0 34px rgba(255,170,80,.8))}
+  /* Neuronas del cerebro: apagadas por defecto, se encienden con la práctica */
+  .neuron{fill:#5e3a22;opacity:.5;transition:fill .6s ease, opacity .6s ease}
+  .neuron.lit{fill:#FFE6A6;opacity:1;filter:drop-shadow(0 0 5px rgba(255,228,150,.95))}
+  .chatAvatar .neuron.lit{animation:neuronPulse 2.2s ease-in-out infinite}
+  @keyframes neuronPulse{0%,100%{opacity:.8}50%{opacity:1}}
+  .chatAvatar.celebrate .mark{animation:brainPop .65s ease}
+  @keyframes brainPop{0%,100%{transform:scale(1)}40%{transform:scale(1.13)}}
+  /* Aviso flotante de logro */
+  .toast{position:fixed;left:50%;top:74px;transform:translateX(-50%) translateY(-12px);
+    background:rgba(255,140,66,.95);color:#1a120a;font-family:'Sora',sans-serif;font-weight:600;
+    font-size:16px;padding:11px 20px;border-radius:999px;box-shadow:0 10px 30px rgba(255,140,66,.5);
+    opacity:0;pointer-events:none;transition:opacity .3s, transform .3s;z-index:60}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .eq{position:absolute;bottom:-2px;display:flex;gap:4px;height:20px;align-items:flex-end;opacity:0;transition:opacity .25s}
+  .talking .eq{opacity:1}
+  .eq i{width:4px;background:linear-gradient(var(--yellow),var(--deep));border-radius:3px;height:6px}
+  .talking .eq i{animation:bar .6s ease-in-out infinite}
+  .eq i:nth-child(2){animation-delay:.12s}.eq i:nth-child(3){animation-delay:.24s}
+  .eq i:nth-child(4){animation-delay:.36s}.eq i:nth-child(5){animation-delay:.18s}
+  @keyframes bar{0%,100%{height:6px}50%{height:18px}}
+
+  /* ---------- Marca ---------- */
+  .name h1{font-family:'Sora',sans-serif;font-weight:700;font-size:46px;letter-spacing:-1px;
+    background:linear-gradient(120deg,var(--yellow),var(--orange));-webkit-background-clip:text;
+    background-clip:text;-webkit-text-fill-color:transparent;line-height:1}
+  .name p{margin-top:9px;font-size:14px;letter-spacing:3px;text-transform:uppercase;color:#9a8a7a;font-weight:500}
+  .lead{max-width:420px;color:#cdbfb0;font-size:21px;line-height:1.55}
+  /* ---- Bienvenida futurista ---- */
+  .orbs{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0}
+  .orbs span{position:absolute;border-radius:50%;filter:blur(70px);opacity:.5;animation:drift 16s ease-in-out infinite}
+  .orbs span:nth-child(1){width:320px;height:320px;background:#FF8C42;top:-70px;left:-50px}
+  .orbs span:nth-child(2){width:280px;height:280px;background:#E5631C;bottom:-60px;right:-40px;animation-delay:-5s}
+  .orbs span:nth-child(3){width:240px;height:240px;background:#FFC83D;top:42%;left:58%;animation-delay:-10s}
+  .orbs span:nth-child(4){width:210px;height:210px;background:#FFB05A;top:6%;right:10%;animation-delay:-13s}
+  @keyframes drift{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(45px,-35px) scale(1.12)}66%{transform:translate(-35px,25px) scale(.92)}}
+  #welcome > *:not(.orbs){position:relative;z-index:1}
+  .hero-title{font-family:'Sora',sans-serif;font-weight:700;font-size:36px;line-height:1.15;letter-spacing:-1px}
+  /* Barra de progreso del cerebro (se va llenando con la práctica) */
+  .brainbar-wrap{display:flex;flex-direction:column;align-items:center;gap:7px}
+  .brainbar-label{font-size:12px;letter-spacing:2.5px;text-transform:uppercase;color:#9a8a7a;font-weight:600}
+  .brainbar{width:230px;max-width:70vw;height:14px;border-radius:999px;background:rgba(255,255,255,.08);
+    border:1px solid rgba(255,140,66,.3);overflow:hidden}
+  .brainbar-fill{height:100%;width:0%;border-radius:999px;
+    background:linear-gradient(90deg,var(--yellow),var(--orange),var(--deep));
+    box-shadow:0 0 16px rgba(255,150,70,.75);transition:width .7s cubic-bezier(.2,.7,.3,1)}
+  .go.pulse{animation:cta 1.5s ease-in-out infinite}
+  @keyframes cta{0%,100%{box-shadow:0 12px 30px rgba(255,140,66,.4);transform:scale(1)}
+                 50%{box-shadow:0 16px 56px rgba(255,178,88,.92);transform:scale(1.05)}}
+  /* avatar de inicio siempre "vivo" con anillos suaves */
+  .stage.hero .ring{animation:pin 2.8s ease-out infinite}
+  .stage.hero .ring:nth-child(2){animation-delay:.95s}
+  .stage.hero .ring:nth-child(3){animation-delay:1.9s}
+  /* Entrada en cascada del inicio (cae y se asienta) */
+  @keyframes dropIn{0%{opacity:0;transform:translateY(-26px) scale(.94)}
+                    70%{opacity:1;transform:translateY(4px) scale(1.01)}
+                    100%{opacity:1;transform:translateY(0) scale(1)}}
+  /* El título cae palabra por palabra (con rebote divertido) */
+  .hero-title .w{display:inline-block;opacity:0;transform:translateY(-46px) rotate(-7deg);
+    background:linear-gradient(120deg,#ffffff,#ffd9a8);-webkit-background-clip:text;background-clip:text;
+    -webkit-text-fill-color:transparent;color:#fff}
+  .hero-title .w.drop{animation:wordDrop .55s cubic-bezier(.2,1.5,.45,1) forwards}
+  @keyframes wordDrop{0%{opacity:0;transform:translateY(-46px) rotate(-7deg)}
+                      65%{opacity:1;transform:translateY(7px) rotate(2deg)}
+                      100%{opacity:1;transform:translateY(0) rotate(0)}}
+  /* El resto entra después de que cae el título */
+  #welcome.active .stage{animation:dropIn .6s ease 1.5s backwards}
+  #welcome.active .name{animation:dropIn .5s ease 1.75s backwards}
+  #welcome.active #brainWrap{animation:dropIn .5s ease 1.9s backwards}
+  /* el botón entra y LUEGO se queda titilando para siempre */
+  #welcome.active #startBtn{animation:dropIn .5s ease 2.05s backwards, cta 1.4s ease-in-out 2.6s infinite}
+  #welcome.active .voicepick{animation:dropIn .5s ease 2.2s backwards}
+  /* Cerebro Lein grande al centro */
+  .stage.hero.big{width:300px;height:300px}
+  .stage.hero.big .mark{width:218px;height:218px}
+  .stage.hero.big .ring{width:252px;height:252px}
+  /* Cerebro en la pantalla de niveles (con glow y anillos, como los demás) */
+  .stage.hero.levelhero{width:150px;height:150px;position:relative}
+  .stage.hero.levelhero::before{content:"";position:absolute;width:190px;height:190px;border-radius:50%;
+    background:radial-gradient(circle, rgba(255,140,66,0) 40%, rgba(255,150,70,.2) 56%, rgba(255,140,66,0) 76%)}
+  .stage.hero.levelhero .mark{width:112px;height:112px;position:relative;z-index:2}
+  .stage.hero.levelhero .mark svg{filter:drop-shadow(0 2px 4px rgba(0,0,0,.6)) drop-shadow(0 0 16px rgba(255,175,75,.55))}
+  .stage.hero.levelhero .ring{width:132px;height:132px}
+
+  /* ---------- Botones ---------- */
+  .go{border:none;cursor:pointer;font-family:'Sora',sans-serif;font-weight:600;font-size:23px;
+    color:#1a120a;background:linear-gradient(120deg,var(--yellow),var(--orange));
+    padding:20px 52px;border-radius:999px;box-shadow:0 12px 30px rgba(255,140,66,.4);transition:transform .15s}
+  .go:active{transform:scale(.95)}
+  .levels{display:grid;grid-template-columns:1fr 1fr;gap:14px;width:100%;max-width:480px;perspective:1000px}
+  .levels button{display:flex;align-items:center;justify-content:center;text-align:center;
+    min-height:150px;font-family:'Sora',sans-serif;font-weight:600;font-size:22px;line-height:1.25;
+    cursor:pointer;color:#f3ece4;padding:18px 14px;border-radius:22px;
+    background:linear-gradient(160deg, rgba(255,140,66,.14), rgba(255,255,255,.03));
+    border:2px solid rgba(255,160,80,.55);box-shadow:0 8px 22px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.06);
+    transition:transform .18s ease, background .18s, box-shadow .18s, border-color .18s}
+  .levels button:hover{transform:translateY(-6px) scale(1.04);
+    background:linear-gradient(160deg, rgba(255,140,66,.30), rgba(255,140,66,.10));
+    border-color:#FFB05A;box-shadow:0 20px 42px rgba(255,140,66,.45)}
+  .levels button:active{transform:scale(.97)}
+  .levels button.full{grid-column:1/-1;min-height:74px;font-size:18px;
+    background:linear-gradient(160deg, rgba(255,140,66,.20), rgba(255,140,66,.06));padding:18px}
+  /* Botón volver (esquina superior izquierda) */
+  .screenBack{position:fixed;top:18px;left:18px;width:46px;height:46px;border-radius:50%;
+    border:1px solid rgba(255,140,66,.35);background:rgba(255,255,255,.07);color:#f3ece4;font-size:24px;
+    cursor:pointer;display:grid;place-items:center;z-index:6}
+  .screenBack:active{transform:scale(.92)}
+  /* Entrada 3D escalonada de las tarjetas (cada vez que se muestra la pantalla) */
+  @keyframes cardIn{from{opacity:0;transform:translateY(30px) rotateX(-45deg) scale(.95)}
+                    to{opacity:1;transform:translateY(0) rotateX(0) scale(1)}}
+  #levelScreen.active .levels button{animation:cardIn .55s cubic-bezier(.2,.75,.3,1) backwards}
+  #levelScreen.active .levels button:nth-child(1){animation-delay:.06s}
+  #levelScreen.active .levels button:nth-child(2){animation-delay:.13s}
+  #levelScreen.active .levels button:nth-child(3){animation-delay:.20s}
+  #levelScreen.active .levels button:nth-child(4){animation-delay:.27s}
+  #levelScreen.active .levels button:nth-child(5){animation-delay:.34s}
+  #levelScreen.active .levels button:nth-child(6){animation-delay:.41s}
+  #levelScreen.active .levels button:nth-child(7){animation-delay:.50s}
+  .link{background:none;border:none;color:#9a8a7a;font-size:14px;text-decoration:underline;cursor:pointer;font-family:inherit}
+  /* Selector de voz */
+  .voicepick{display:none;flex-direction:column;gap:11px;align-items:center;margin-top:8px}
+  .voicepick.show{display:flex}
+  .vp-label{font-size:16px;color:#b8a795}
+  .vp-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;max-width:440px}
+  .vp-row button{font-family:inherit;font-size:18px;cursor:pointer;background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,140,66,.3);color:#f3ece4;padding:12px 20px;border-radius:999px;transition:.12s}
+  .vp-row button.sel{background:var(--orange);border-color:var(--orange);color:#1a120a;font-weight:600}
+  .vp-row button:active{transform:scale(.95)}
+  .vp-row button.loading{opacity:.55}
+  @keyframes vppulse{0%,100%{opacity:.55}50%{opacity:.85}}
+  .vp-row button.loading{animation:vppulse .7s ease-in-out infinite}
+
+  /* ---------- Chat ---------- */
+  #chat{display:none;flex-direction:column;height:100dvh;max-width:720px;margin:0 auto;width:100%}
+  #chat.active{display:flex}
+  .topbar{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.07)}
+  .topbar .mini{width:44px;height:44px;flex:0 0 44px}
+  .topbar .who{font-family:'Sora',sans-serif;font-weight:600;font-size:23px;line-height:1}
+  .topbar .lvl{font-size:14px;color:#9a8a7a;margin-top:4px}
+  .timepill{margin-left:auto;font-size:17px;color:#cdbfb0;background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,140,66,.2);padding:8px 14px;border-radius:999px;white-space:nowrap}
+  .feed{flex:1;overflow-y:auto;padding:22px 18px;display:flex;flex-direction:column;gap:18px}
+  .bubble{max-width:90%;padding:17px 20px;border-radius:22px;font-size:24px;line-height:1.5;word-wrap:break-word}
+  .lein{align-self:flex-start;background:rgba(255,255,255,.07);border:1px solid rgba(255,140,66,.18);border-bottom-left-radius:6px}
+  .me{align-self:flex-end;background:linear-gradient(120deg,var(--orange),var(--deep));color:#1a120a;border-bottom-right-radius:6px;font-weight:500}
+  .bubble.listen{color:#b8a795;font-style:italic;background:rgba(255,255,255,.04);border-style:dashed}
+  .hint{align-self:flex-start;max-width:90%;font-size:20px;color:#ffd9a8;background:rgba(255,140,66,.1);
+    border:1px dashed rgba(255,140,66,.35);padding:14px 18px;border-radius:14px;line-height:1.45}
+  /* Corrección suave (nota visible, color distinto a la pista) */
+  .correction{align-self:flex-start;max-width:90%;font-size:19px;color:#bfe6ff;background:rgba(90,160,220,.12);
+    border:1px dashed rgba(130,185,235,.5);padding:13px 17px;border-radius:14px;line-height:1.45}
+  .ideas-label{align-self:flex-start;font-size:14.5px;color:#9a8a7a;margin-bottom:-6px}
+  .row-actions{align-self:flex-start;display:flex;gap:10px;flex-wrap:wrap;margin-top:-4px}
+  .chip{cursor:pointer;font-size:20px;color:#f3ece4;background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,140,66,.3);padding:14px 20px;border-radius:999px;transition:.12s}
+  .chip:active{transform:scale(.95);background:rgba(255,140,66,.2)}
+  .speakbtn{cursor:pointer;background:rgba(255,255,255,.06);border:1px solid rgba(255,140,66,.25);
+    color:#cdbfb0;border-radius:999px;padding:9px 15px;font-size:16px;align-self:flex-start}
+  .typing{align-self:flex-start;color:#9a8a7a;font-size:19px;font-style:italic}
+  /* Botón de atrás */
+  .backbtn{flex:0 0 auto;width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,140,66,.3);
+    background:rgba(255,255,255,.06);color:#f3ece4;font-size:24px;cursor:pointer;display:grid;
+    place-items:center;line-height:1;padding:0}
+  .backbtn:active{transform:scale(.92)}
+  /* Lein animado dentro del chat (reposo / escuchando / hablando) */
+  .chatAvatar{width:100%;height:212px;flex:0 0 auto;display:grid;place-items:center;position:relative;
+    border-bottom:1px solid rgba(255,255,255,.05)}
+  /* Halo SOLO en el borde (centro transparente) para no tapar al cerebrito */
+  .chatAvatar::before{content:"";position:absolute;width:270px;height:270px;border-radius:50%;
+    background:radial-gradient(circle, rgba(255,140,66,0) 40%, rgba(255,150,70,.16) 56%, rgba(255,140,66,0) 76%)}
+  .chatAvatar.listening::before,.chatAvatar.talking::before{background:radial-gradient(circle, rgba(255,170,80,0) 40%, rgba(255,185,95,.26) 56%, rgba(255,140,66,0) 76%)}
+  .chatAvatar .mark{width:152px;height:152px;position:relative;z-index:2}
+  /* Borde oscuro + brillo: separa al cerebrito del fondo y lo hace nítido */
+  .chatAvatar .mark svg{filter:drop-shadow(0 2px 4px rgba(0,0,0,.65)) drop-shadow(0 0 16px rgba(255,175,75,.5))}
+  .chatAvatar.listening .mark svg,.chatAvatar.talking .mark svg{filter:drop-shadow(0 2px 4px rgba(0,0,0,.65)) drop-shadow(0 0 28px rgba(255,195,105,.8))}
+  .chatAvatar .ring{width:184px;height:184px;border-color:rgba(255,160,80,.5);z-index:1}
+  .chatAvatar .eq{bottom:20px;z-index:3}
+  .composer{display:flex;gap:10px;padding:14px 16px;border-top:1px solid rgba(255,255,255,.07);align-items:center}
+  .composer input{flex:1;background:rgba(255,255,255,.07);border:1px solid rgba(255,140,66,.25);
+    color:#f3ece4;font-size:21px;font-family:inherit;padding:18px 21px;border-radius:999px;outline:none}
+  .composer input::placeholder{color:#8a7c6e}
+  .composer button{flex:0 0 auto;border:none;cursor:pointer;background:linear-gradient(120deg,var(--yellow),var(--orange));
+    color:#1a120a;font-size:24px;width:62px;height:62px;border-radius:50%;display:grid;place-items:center}
+  .composer button:disabled{opacity:.4}
+  .blocked{position:fixed;inset:0;background:rgba(20,16,25,.92);display:none;flex-direction:column;
+    align-items:center;justify-content:center;gap:18px;padding:32px;text-align:center;z-index:50}
+  .blocked.active{display:flex}
+</style>
+</head>
+<body>
+
+  <!-- ====== Avatar SVG reutilizable (se clona) ====== -->
+  <template id="avatarTpl">
+    <svg viewBox="0 0 200 200" aria-label="Lein">
+      <defs>
+        <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#FFE59A"/><stop offset="0.55" stop-color="#FFA24E"/><stop offset="1" stop-color="#F0731C"/>
+        </linearGradient>
+      </defs>
+      <g fill="url(#g)">
+        <ellipse cx="100" cy="108" rx="64" ry="52"/>
+        <circle cx="64" cy="78" r="26"/><circle cx="100" cy="68" r="28"/>
+        <circle cx="136" cy="78" r="26"/><circle cx="50" cy="104" r="22"/>
+        <circle cx="150" cy="104" r="22"/><circle cx="74" cy="62" r="20"/>
+        <circle cx="126" cy="62" r="20"/>
+        <path d="M92 150 q8 18 16 0 z"/>
+      </g>
+      <g fill="none" stroke="#9c3d12" stroke-width="3" stroke-linecap="round" opacity="0.45">
+        <path d="M100 60 Q100 100 100 150"/><path d="M100 84 Q78 90 70 108"/>
+        <path d="M100 84 Q122 90 130 108"/><path d="M100 112 Q84 118 80 134"/>
+        <path d="M100 112 Q116 118 120 134"/><path d="M86 74 Q72 80 66 92"/>
+        <path d="M114 74 Q128 80 134 92"/>
+      </g>
+      <!-- Neuronas: se encienden con la práctica (el cerebro "despierta") -->
+      <g class="neurons">
+        <circle class="neuron" data-i="0" cx="64"  cy="80"  r="5.5"/>
+        <circle class="neuron" data-i="1" cx="100" cy="68"  r="5.5"/>
+        <circle class="neuron" data-i="2" cx="136" cy="80"  r="5.5"/>
+        <circle class="neuron" data-i="3" cx="52"  cy="104" r="5"/>
+        <circle class="neuron" data-i="4" cx="148" cy="104" r="5"/>
+        <circle class="neuron" data-i="5" cx="78"  cy="62"  r="5"/>
+        <circle class="neuron" data-i="6" cx="122" cy="62"  r="5"/>
+        <circle class="neuron" data-i="7" cx="80"  cy="120" r="5"/>
+        <circle class="neuron" data-i="8" cx="120" cy="120" r="5"/>
+        <circle class="neuron" data-i="9" cx="100" cy="108" r="5.5"/>
+      </g>
+    </svg>
+  </template>
+
+  <!-- ====== Pantalla 1: Bienvenida ====== -->
+  <section class="screen active" id="welcome">
+    <div class="orbs"><span></span><span></span><span></span><span></span></div>
+    <h2 class="hero-title" id="heroTitle"><span class="w">Tu</span> <span class="w">cerebro</span> <span class="w">y</span> <span class="w">boca</span><br><span class="w">hablan</span> <span class="w">aquí</span></h2>
+    <div class="stage hero big" id="stageWelcome">
+      <div class="ring"></div><div class="ring"></div><div class="ring"></div>
+      <div class="mark"></div>
+      <div class="eq"><i></i><i></i><i></i><i></i><i></i></div>
+    </div>
+    <div class="name"><h1 style="font-size:30px">I'm Lein</h1></div>
+    <div class="brainbar-wrap" id="brainWrap" style="display:none">
+      <div class="brainbar-label">Tu cerebro</div>
+      <div class="brainbar"><div class="brainbar-fill" id="brainFill"></div></div>
+    </div>
+    <button class="go pulse" id="startBtn">▶ ¡Empezar!</button>
+    <p class="lead" style="font-size:14px;color:#8a7c6e" id="browserWarn"></p>
+    <div class="voicepick" id="voicePick">
+      <div class="vp-label">🔊 Elige la voz de Lein (tócala para oírla):</div>
+      <div class="vp-row">
+        <button data-voice="onyx">Onyx ♂</button>
+        <button data-voice="echo">Echo ♂</button>
+        <button data-voice="fable">Fable ♂ 🇬🇧</button>
+        <button data-voice="ash">Ash ♂</button>
+        <button data-voice="nova">Nova ♀</button>
+        <button data-voice="shimmer">Shimmer ♀</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== Pantalla 2: Elegir nivel ====== -->
+  <section class="screen" id="levelScreen">
+    <button class="screenBack" id="levelBack" title="Volver al inicio" aria-label="Volver al inicio">←</button>
+    <div class="stage hero levelhero" id="stageLevel">
+      <div class="ring"></div><div class="ring"></div><div class="ring"></div>
+      <div class="mark"></div>
+    </div>
+    <div class="name"><h1 style="font-size:33px">¡Empecemos a practicar!</h1></div>
+    <p class="lead">Elige tu nivel 👇 o deja que Lein lo descubra.</p>
+    <div class="levels" id="levelButtons">
+      <button data-l="A1">Estoy empezando</button>
+      <button data-l="A1+">Estoy empezando +</button>
+      <button data-l="A2">Ya sé un poco</button>
+      <button data-l="B1">Ya sé un poco +</button>
+      <button data-l="B2">Ya me defiendo</button>
+      <button data-l="C1">Como todo un experto</button>
+      <button class="full" data-l="__placement__">No sé mi nivel — que Lein me ubique</button>
+    </div>
+  </section>
+
+  <!-- ====== Pantalla 3: Chat ====== -->
+  <section id="chat">
+    <div class="topbar">
+      <button class="backbtn" id="backBtn" title="Atrás" aria-label="Atrás">←</button>
+      <div>
+        <div class="who">Lein</div>
+        <div class="lvl" id="levelLabel">A1</div>
+      </div>
+      <div class="timepill" id="timePill">10:00</div>
+      <button id="devRecap" class="backbtn" title="Probar repaso (solo pruebas)" style="display:none;width:42px;height:42px;font-size:17px;margin-left:8px">↻</button>
+    </div>
+    <div class="chatAvatar stage" id="stageChat">
+      <div class="ring"></div><div class="ring"></div><div class="ring"></div>
+      <div class="mark"></div>
+      <div class="eq"><i></i><i></i><i></i><i></i><i></i></div>
+    </div>
+    <div class="feed" id="feed"></div>
+    <div class="composer">
+      <input id="input" type="text" placeholder="Escribe en inglés…" autocomplete="off" autocapitalize="sentences">
+      <button id="sendBtn" title="Enviar">➤</button>
+    </div>
+  </section>
+
+  <!-- Aviso flotante (logros del cerebro) -->
+  <div class="toast" id="toast"></div>
+
+  <!-- ====== Overlay: tope alcanzado ====== -->
+  <div class="blocked" id="blockedOverlay">
+    <div class="stage"><div class="mark"></div></div>
+    <div class="name"><h1 style="font-size:24px">¡Buen trabajo hoy!</h1></div>
+    <p class="lead" id="blockedMsg">Llegaste a tu práctica de hoy. ¡Nos vemos mañana! 👋</p>
+  </div>
+
+<script>
+  // ---------- Configuración ----------
+  // El backend sirve este archivo, así que la API está en el MISMO origen.
+  const API = "";
+  const params = new URLSearchParams(location.search);
+  const STUDENT_ID = params.get("studentId") || localStorage.getItem("lein_sid") || ("test-" + Math.random().toString(36).slice(2, 9));
+  localStorage.setItem("lein_sid", STUDENT_ID);
+  const STUDENT_NAME = params.get("name") || "";
+  const URL_LEVEL = params.get("level"); // si Moodle ya manda el nivel
+  // Memoria del nombre por estudiante (en este dispositivo). En producción,
+  // Moodle puede mandar el nombre en la URL (?name=) y manda siempre.
+  const NAME_KEY = "lein_name_" + STUDENT_ID;
+  let knownName = STUDENT_NAME || localStorage.getItem(NAME_KEY) || "";
+  if (knownName) localStorage.setItem(NAME_KEY, knownName);
+
+  // ---- "Enciende tu cerebro": el cerebrito se enciende con la práctica ----
+  const BRAIN_KEY = "lein_brain_" + STUDENT_ID;
+  let brainPower = Number(localStorage.getItem(BRAIN_KEY) || 0);
+  const NEURONS = 10, PER_NEURON = 3; // ~3 turnos hablados encienden 1 neurona
+  function litCount(){ return Math.max(0, Math.min(NEURONS, Math.floor(brainPower / PER_NEURON))); }
+  function brainStage(lit){
+    return lit>=10?"Genio": lit>=8?"Brillante": lit>=6?"Encendido": lit>=4?"Conectado": lit>=2?"Despierto":"Chispa";
+  }
+  function renderBrain(){
+    const lit = litCount();
+    document.querySelectorAll(".neuron").forEach(n=>{
+      n.classList.toggle("lit", Number(n.dataset.i) < lit);
+    });
+    const max = NEURONS * PER_NEURON;
+    const pct = Math.round(Math.min(brainPower, max) / max * 100);
+    const fill = document.getElementById("brainFill");
+    const wrap = document.getElementById("brainWrap");
+    if(fill) fill.style.width = pct + "%";
+    if(wrap) wrap.style.display = "flex";
+  }
+  function showToast(msg){
+    const t = document.getElementById("toast"); if(!t) return;
+    t.textContent = msg; t.classList.add("show");
+    clearTimeout(showToast._t); showToast._t = setTimeout(()=>t.classList.remove("show"), 2200);
+  }
+  function addBrainPower(n){
+    const before = litCount();
+    brainPower += n;
+    localStorage.setItem(BRAIN_KEY, String(brainPower));
+    const after = litCount();
+    renderBrain();
+    if(after > before){ // ¡se encendió una neurona nueva!
+      const st = document.getElementById("stageChat");
+      if(st){ st.classList.add("celebrate"); setTimeout(()=>st.classList.remove("celebrate"), 700); }
+      showToast(after >= NEURONS ? "🧠 ¡Tu cerebro está al máximo! 🎉" : "🧠 ¡Tu cerebro creció!");
+    }
+  }
+
+  // Velocidad de voz por nivel (del documento de arranque).
+  const VOICE_RATE = { "A1":0.72, "A1+":0.80, "A2":0.88, "B1":0.95, "B2":1.0, "C1":1.0, "PLACEMENT":0.85 };
+
+  // Etiquetas amigables que ve el estudiante (por dentro seguimos usando CEFR).
+  const LEVEL_LABELS = {
+    "A1": "Estoy empezando",
+    "A1+": "Estoy empezando +",
+    "A2": "Ya sé un poco",
+    "B1": "Ya sé un poco +",
+    "B2": "Ya me defiendo",
+    "C1": "Como todo un experto",
+  };
+  const labelFor = (lvl)=> LEVEL_LABELS[lvl] || lvl;
+
+  // ---------- Estado ----------
+  let level = "A1";
+  let placementMode = false;
+  let history = [];      // [{role:'user'|'assistant', content}]
+  let lastSay = "";
+  let busy = false;
+  let blocked = false;
+  let sessionCorrections = []; // errores acumulados de la sesión (para el recap)
+  let recapDone = false;       // ya se hizo el repaso final de los 2 min
+  const RECAP_AT_SECONDS_LEFT = 120; // faltando 2 min, hacer el recap
+
+  // ---------- Avatar: clonar SVG en cada .mark ----------
+  const tpl = document.getElementById("avatarTpl");
+  document.querySelectorAll(".mark").forEach(m => m.appendChild(tpl.content.cloneNode(true)));
+
+  function setAvatarState(stageEl, state){
+    if(!stageEl) return;
+    stageEl.classList.remove("listening","talking");
+    if(state==="listening") stageEl.classList.add("listening");
+    if(state==="talking") stageEl.classList.add("talking");
+  }
+  function leinState(state){
+    setAvatarState(document.getElementById("stageWelcome"), state);
+    setAvatarState(document.getElementById("stageChat"), state);
+  }
+
+  // ---------- Voz (speechSynthesis del navegador) ----------
+  let enVoice=null;
+  function pickVoices(){
+    const v = speechSynthesis.getVoices();
+    enVoice = v.find(x=>/en[-_]?US/i.test(x.lang)&&/natural|google|samantha|zoe|aaron|ava/i.test(x.name))
+           || v.find(x=>x.lang&&x.lang.toLowerCase().startsWith('en')) || null;
+  }
+  pickVoices();
+  if (typeof speechSynthesis !== "undefined") speechSynthesis.onvoiceschanged = pickVoices;
+
+  // Limpia el texto antes de hablarlo: quita emojis (para que no diga
+  // "smiley face") y lo que esté entre paréntesis.
+  function cleanForSpeech(t){
+    return (t||"")
+      .replace(/\bLein\b/gi, "Lane")           // "Lein" se PRONUNCIA "Lane" (=Layn, como "play"); no cambia lo escrito
+      .replace(/\([^)]*\)/g, " ")
+      .replace(/[\p{Extended_Pictographic}‍️]/gu, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+  // --- Voz premium del servidor (igual en iPhone/Android/PC) con respaldo al navegador ---
+  let serverTTS = true;        // se apaga solo si el backend no tiene voz premium
+  let audioUnlocked = false;
+  let selectedVoice = localStorage.getItem("lein_voice") || "shimmer"; // voz elegida en el selector
+  let speakSeq = 0; // token: solo el audio más reciente suena (evita encimar voces)
+  const leinAudio = new Audio();
+  const SILENT = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
+  // Un toque del usuario "desbloquea" el audio en móviles (clave en iPhone).
+  function unlockAudio(){
+    if(audioUnlocked) return;
+    try{ leinAudio.src = SILENT; leinAudio.play().then(()=>{ leinAudio.pause(); audioUnlocked=true; }).catch(()=>{}); }catch(e){}
+  }
+
+  // Voz del navegador (respaldo).
+  function speakBrowser(clean, rate, onend){
+    try{
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(clean);
+      u.lang = "en-US"; u.rate = rate || VOICE_RATE[level] || 0.85; u.pitch = 1.05;
+      if(enVoice) u.voice = enVoice;
+      leinState("talking");
+      u.onend = ()=>{ leinState("idle"); if(onend) onend(); };
+      u.onerror = ()=>{ leinState("idle"); if(onend) onend(); };
+      speechSynthesis.speak(u);
+    }catch(e){ leinState("idle"); if(onend) onend(); }
+  }
+
+  // Habla: intenta la voz premium del servidor; si no hay, usa la del navegador.
+  async function speak(text, rate, onend){
+    const clean = cleanForSpeech(text);
+    if(!clean){ if(onend) onend(); return; }
+    const myToken = ++speakSeq;                 // marca este turno de voz
+    try{ leinAudio.pause(); }catch(e){}          // corta lo que estuviera sonando
+    try{ speechSynthesis.cancel(); }catch(e){}
+    if(serverTTS){
+      try{
+        const res = await fetch(API + "/api/tts", {
+          method:"POST", headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({ text: clean, level, voice: selectedVoice })
+        });
+        if(myToken !== speakSeq) return;         // llegó una voz más nueva: descartar esta
+        const ct = res.headers.get("content-type") || "";
+        if(res.ok && ct.includes("audio")){
+          const url = URL.createObjectURL(await res.blob());
+          try{ speechSynthesis.cancel(); }catch(e){}
+          try{ leinAudio.pause(); leinAudio.currentTime = 0; }catch(e){}
+          let started = false;
+          const startPlay = ()=>{
+            if(started) return; started = true;
+            leinState("talking");
+            leinAudio.play().catch(()=>{ leinState("idle"); if(onend) onend(); });
+          };
+          leinAudio.onended = ()=>{ leinState("idle"); URL.revokeObjectURL(url); if(onend) onend(); };
+          leinAudio.onerror  = ()=>{ leinState("idle"); if(onend) onend(); };
+          // Reproducir solo cuando el audio esté listo -> no se corta la 1ª palabra.
+          leinAudio.oncanplay = startPlay;
+          leinAudio.src = url;
+          leinAudio.load();
+          setTimeout(startPlay, 1000); // respaldo por si 'canplay' no dispara
+          return;
+        }
+        serverTTS = false; // backend sin voz premium -> navegador de aquí en más
+      }catch(e){ /* red o reproducción falló: caemos al navegador */ }
+    }
+    if(myToken !== speakSeq) return; // ya hay una voz más nueva en camino
+    speakBrowser(clean, rate, onend);
+  }
+
+  // ---------- Pantallas ----------
+  function show(id){
+    document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+    document.getElementById("chat").classList.remove("active");
+    const el = document.getElementById(id);
+    if(id==="chat") el.classList.add("active"); else el.classList.add("active");
+  }
+
+  // ---------- Aviso de navegador ----------
+  if (typeof speechSynthesis === "undefined") {
+    document.getElementById("browserWarn").textContent = "Tip: para oír a Lein, ábreme en Safari o Chrome.";
+  }
+
+  // ---------- Empezar ----------
+  document.getElementById("startBtn").onclick = ()=>{
+    unlockAudio(); // el toque desbloquea el audio en móviles
+    if (URL_LEVEL && VOICE_RATE[URL_LEVEL]) {
+      // Moodle ya mandó el nivel: entra directo (el saludo es el de Lein en el nivel).
+      startChat(URL_LEVEL);
+    } else {
+      // Bienvenida una sola vez; el saludo del nivel viene después, sin cruzarse.
+      show("levelScreen");
+      speak("Welcome to your speaking practice! I'm Lein.");
+    }
+  };
+
+  // ---------- Elegir nivel ----------
+  document.getElementById("levelButtons").addEventListener("click", (e)=>{
+    const btn = e.target.closest("button"); if(!btn) return;
+    const l = btn.dataset.l;
+    if (l === "__placement__") startPlacement();
+    else startChat(l);
+  });
+
+  // ---------- Iniciar chat normal ----------
+  function startChat(lvl){
+    level = lvl; placementMode = false;
+    document.getElementById("levelLabel").textContent = labelFor(lvl);
+    resetChat();
+    show("chat");
+    startTimeTracking();
+    refreshTime();
+    // Primer turno: pedimos a Lein que abra la conversación.
+    sendToLein("", true);
+  }
+
+  // ---------- Iniciar test de ubicación ----------
+  function startPlacement(){
+    placementMode = true; level = "A1";
+    document.getElementById("levelLabel").textContent = "Ubicación";
+    resetChat();
+    show("chat");
+    startTimeTracking();
+    refreshTime();
+    sendToLein("", true);
+  }
+
+  // Limpia el chat (al entrar o al volver atrás).
+  function resetChat(){
+    try { speechSynthesis.cancel(); } catch(e){}
+    try { leinAudio.pause(); } catch(e){}
+    speakSeq++; // invalida cualquier voz que venga en camino
+    history = []; lastSay = ""; busy = false;
+    sessionCorrections = []; recapDone = false;
+    document.getElementById("feed").innerHTML = "";
+    leinState("idle");
+  }
+
+  // ---------- Botón de atrás ----------
+  document.getElementById("backBtn").onclick = ()=>{
+    resetChat();
+    placementMode = false;
+    show("levelScreen");
+  };
+
+  // Volver del selector de nivel a la pantalla de inicio.
+  document.getElementById("levelBack").onclick = ()=>{
+    try { speechSynthesis.cancel(); } catch(e){}
+    try { leinAudio.pause(); } catch(e){}
+    speakSeq++;
+    show("welcome");
+    renderBrain();
+    dropTitle();
+  };
+
+  // ---------- Render de mensajes ----------
+  const feed = document.getElementById("feed");
+  function addBubble(text, who){
+    const b = document.createElement("div");
+    b.className = "bubble " + (who==="me"?"me":"lein");
+    b.textContent = text;
+    feed.appendChild(b); scrollDown(); return b;
+  }
+  function addHint(text){
+    if(!text) return;
+    const h = document.createElement("div");
+    h.className="hint"; h.textContent = "💡 " + text;
+    feed.appendChild(h); scrollDown();
+  }
+  // Corrección suave y explícita (siempre visible, también en B1+ sin texto).
+  function addCorrection(text){
+    if(!text) return;
+    const c = document.createElement("div");
+    c.className="correction"; c.textContent = "✏️ " + text;
+    feed.appendChild(c); scrollDown();
+  }
+  function addSuggestions(arr){
+    if(!arr || !arr.length) return;
+    const lbl = document.createElement("div");
+    lbl.className = "ideas-label";
+    lbl.textContent = "💡 Ideas de respuesta — di la que sea real para ti:";
+    feed.appendChild(lbl);
+    const row = document.createElement("div");
+    row.className = "row-actions";
+    arr.forEach(s=>{
+      const c = document.createElement("button");
+      c.className="chip"; c.textContent = s;
+      // Tocar el chip ESCRIBE la frase en la casilla (no gasta voz).
+      c.onclick = ()=>{ const inp=document.getElementById("input"); inp.value=s; inp.focus(); };
+      row.appendChild(c);
+    });
+    feed.appendChild(row); scrollDown();
+  }
+  function addRepeat(text){
+    const r = document.createElement("button");
+    r.className="speakbtn"; r.textContent = "🔊 Repetir";
+    r.onclick = ()=> speak(text);
+    feed.appendChild(r); scrollDown();
+  }
+  // Burbuja "solo escucha" (cuando NO mostramos el texto de Lein).
+  function addListenBubble(){
+    const b = document.createElement("div");
+    b.className = "bubble lein listen";
+    b.textContent = "🔊 Escucha a Lein…";
+    feed.appendChild(b); scrollDown();
+  }
+  // ¿Se muestra el texto de lo que dice Lein?
+  // Solo en A1/A1+/A2. En B1, B2, C1 y en el placement = solo escuchar.
+  function showTranscript(){
+    if (placementMode) return false;
+    return level === "A1" || level === "A1+" || level === "A2";
+  }
+  let typingEl=null;
+  function showTyping(){ typingEl=document.createElement("div"); typingEl.className="typing"; typingEl.textContent="Lein está pensando…"; feed.appendChild(typingEl); scrollDown(); leinState("listening"); }
+  function hideTyping(){ if(typingEl){typingEl.remove(); typingEl=null;} }
+  function scrollDown(){ feed.scrollTop = feed.scrollHeight; }
+
+  // ---------- Hablar con Lein (backend) ----------
+  async function sendToLein(text, isOpening, isRecap){
+    if (busy || blocked) return;
+    busy = true;
+    document.getElementById("sendBtn").disabled = true;
+
+    if (text && !isOpening && !isRecap){ addBubble(text, "me"); history.push({role:"user", content:text}); addBrainPower(1); }
+
+    showTyping();
+    try{
+      const res = await fetch(API + "/api/chat", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({
+          text: isOpening ? (placementMode ? "Hello" : "Hi, let's start.") : text,
+          history, level, placement: placementMode, studentId: STUDENT_ID,
+          opening: isOpening,
+          recap: !!isRecap, errors: isRecap ? sessionCorrections : [],
+          studentName: knownName || ""
+        })
+      });
+      const data = await res.json();
+      hideTyping();
+
+      if (data.limitReached){ goBlocked(data.message); return; }
+      if (data.error){ addBubble("(Ups: " + (data.message||data.error) + ")", "lein"); return; }
+
+      const wasPlacement = placementMode; // ¿este turno fue del test de ubicación?
+      const isResult = !!data.placement;  // ¿es el turno donde Lein dice tu nivel?
+
+      // Si era test de ubicación y ya hay nivel, lo aplicamos.
+      if (data.placement){
+        placementMode = false; level = data.placement;
+        document.getElementById("levelLabel").textContent = labelFor(level);
+        showToast(`🎉 ¡Tu nivel: ${labelFor(level)}!`); // muestra el nivel amigable
+      }
+
+      // Recordar el nombre si Lein lo aprendió (para no preguntarlo otro día).
+      if (data.studentName && data.studentName !== knownName){
+        knownName = data.studentName;
+        localStorage.setItem(NAME_KEY, knownName);
+      }
+
+      lastSay = data.say || "";
+      history.push({role:"assistant", content:lastSay});
+
+      // El resultado del placement y el RECAP final SÍ se muestran como texto.
+      if (isResult || isRecap || showTranscript()) {
+        addBubble(lastSay, "lein");
+        addHint(data.hint);
+      } else {
+        addListenBubble(); // B1+/placement: solo escuchar, sin texto
+      }
+      // Corrección suave: SIEMPRE visible (también en B1+), para que la noten.
+      // Se acumula para el repaso final (no durante el propio recap).
+      if (!wasPlacement && !isRecap && data.correction){
+        addCorrection(data.correction);
+        sessionCorrections.push(data.correction);
+      }
+      // Sugerencias: solo en conversación normal. En el placement NO se dan
+      // opciones — necesitamos oír las palabras propias del estudiante.
+      if (!wasPlacement) addSuggestions(data.suggestions);
+      // Lein DICE la respuesta y, si hubo error, también dice el tip de corrección.
+      const toSpeak = (!isRecap && !wasPlacement && data.correction)
+        ? (lastSay + " ... Quick tip: " + data.correction)
+        : lastSay;
+      speak(toSpeak);
+
+      if (data._timeStatus) updateTime(data._timeStatus);
+    }catch(err){
+      hideTyping();
+      addBubble("(No pude conectar con Lein. ¿El servidor está encendido?)", "lein");
+    }finally{
+      busy=false; document.getElementById("sendBtn").disabled=false;
+      document.getElementById("input").focus();
+    }
+  }
+
+  // ---------- Enviar desde el input ----------
+  function submit(){
+    const inp = document.getElementById("input");
+    const t = inp.value.trim();
+    if(!t) return;
+    inp.value="";
+    sendToLein(t, false);
+  }
+  document.getElementById("sendBtn").onclick = submit;
+  document.getElementById("input").addEventListener("keydown", e=>{ if(e.key==="Enter") submit(); });
+
+  // ---------- Contador de tiempo (tiempo activo) ----------
+  let pingTimer=null;
+  function startTimeTracking(){
+    if(pingTimer) return;
+    // Cada 10s de página visible, reportamos 10s de práctica activa.
+    pingTimer = setInterval(async ()=>{
+      if(document.hidden || blocked) return;
+      try{
+        const r = await fetch(API + "/api/usage/ping", {
+          method:"POST", headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({ studentId: STUDENT_ID, seconds: 10 })
+        });
+        updateTime(await r.json());
+      }catch(e){}
+    }, 10000);
+  }
+  async function refreshTime(){
+    try{
+      const r = await fetch(API + "/api/usage/status?studentId=" + encodeURIComponent(STUDENT_ID));
+      updateTime(await r.json());
+    }catch(e){}
+  }
+  function updateTime(st){
+    if(!st) return;
+    const rem = Math.max(0, st.remainingSeconds||0);
+    const m = Math.floor(rem/60), s = rem%60;
+    document.getElementById("timePill").textContent = `${m}:${String(s).padStart(2,"0")}`;
+    // Faltando ~2 min: repaso final de los errores (si hubo) y pedir repetir.
+    if (!recapDone && !busy && !placementMode && !blocked
+        && sessionCorrections.length > 0
+        && rem <= RECAP_AT_SECONDS_LEFT && rem > 0){
+      recapDone = true;
+      sendToLein("", false, true);
+    }
+    if (st.blocked) goBlocked();
+  }
+  function goBlocked(msg){
+    blocked = true;
+    if(msg) document.getElementById("blockedMsg").textContent = msg;
+    document.getElementById("blockedOverlay").classList.add("active");
+    document.getElementById("input").disabled = true;
+    document.getElementById("sendBtn").disabled = true;
+    if(pingTimer){ clearInterval(pingTimer); pingTimer=null; }
+  }
+
+  // ---------- Selector de voz (solo si hay voz premium) ----------
+  const sampleCache = {}; // guarda la muestra de cada voz (clic siguiente = instantáneo)
+  const SAMPLE_TEXT = "Hi there! I'm Lein. Nice to meet you!";
+  async function playSample(voice, btn){
+    unlockAudio();
+    const myToken = ++speakSeq;
+    try{ leinAudio.pause(); }catch(e){}
+    if(btn) btn.classList.add("loading");
+    const stop = ()=>{ if(btn) btn.classList.remove("loading"); };
+    try{
+      let url = sampleCache[voice];
+      if(!url){
+        const res = await fetch(API + "/api/tts", {
+          method:"POST", headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({ text: SAMPLE_TEXT, level: "A2", voice })
+        });
+        if(!res.ok || !(res.headers.get("content-type")||"").includes("audio")){ stop(); return; }
+        url = URL.createObjectURL(await res.blob());
+        sampleCache[voice] = url;
+      }
+      if(myToken !== speakSeq){ stop(); return; } // tocó otra voz: descartar
+      leinAudio.src = url; leinAudio.currentTime = 0;
+      leinAudio.onplay   = stop;  // quita el "cargando" en cuanto suena
+      leinAudio.onended  = stop;
+      leinAudio.onerror  = stop;
+      await leinAudio.play().catch(stop);
+    }catch(e){ stop(); }
+  }
+
+  fetch(API + "/api/health").then(r=>r.json()).then(h=>{
+    // Botón de prueba del repaso (solo en modo desarrollo, cuando el tope es alto).
+    if (h.dailyLimitMinutes > 30){
+      const dr = document.getElementById("devRecap");
+      dr.style.display = "grid";
+      dr.onclick = ()=>{ if(!busy && !placementMode){ recapDone = true; sendToLein("", false, true); } };
+    }
+    if(h.ttsProvider === "openai"){
+      const vp = document.getElementById("voicePick");
+      vp.classList.add("show");
+      vp.querySelectorAll("button").forEach(b=>{
+        if(b.dataset.voice === selectedVoice) b.classList.add("sel");
+        b.onclick = ()=>{
+          selectedVoice = b.dataset.voice;
+          localStorage.setItem("lein_voice", selectedVoice);
+          vp.querySelectorAll("button").forEach(x=>x.classList.toggle("sel", x===b)); // resalta YA
+          playSample(selectedVoice, b);
+        };
+      });
+    }
+  }).catch(()=>{});
+
+  // Sonido corto "fun" (sintetizado, sin archivo) por cada palabra que cae.
+  let _actx;
+  function pop(i){
+    try{
+      _actx = _actx || new (window.AudioContext || window.webkitAudioContext)();
+      if(_actx.state === "suspended") _actx.resume();
+      const o=_actx.createOscillator(), g=_actx.createGain(), t=_actx.currentTime;
+      o.type="triangle"; o.frequency.value = 360 + i*130;
+      g.gain.setValueAtTime(0.0001,t);
+      g.gain.exponentialRampToValueAtTime(0.3, t+0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t+0.22);
+      o.connect(g).connect(_actx.destination); o.start(t); o.stop(t+0.24);
+    }catch(e){}
+  }
+  function dropTitle(){
+    const words = document.querySelectorAll("#heroTitle .w");
+    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if(reduce){ words.forEach(w=>{ w.style.opacity="1"; w.style.transform="none"; }); return; }
+    words.forEach((w,i)=>{
+      w.classList.remove("drop"); w.style.opacity=""; w.style.transform=""; void w.offsetWidth;
+      setTimeout(()=>{ w.classList.add("drop"); pop(i); }, 150 + i*240);
+    });
+    // Seguridad: dejarlas visibles aunque la animación no corra.
+    setTimeout(()=>{ words.forEach(w=>{ w.style.opacity="1"; w.style.transform="none"; }); }, 150 + words.length*240 + 900);
+  }
+  // Desbloquea el audio del título al primer toque (por reglas del navegador).
+  window.addEventListener("pointerdown", ()=>{ try{ if(_actx && _actx.state==="suspended") _actx.resume(); }catch(e){} }, { once:true });
+
+  // estado inicial
+  renderBrain();
+  dropTitle();
+  leinState("idle");
+</script>
+</body>
+</html>
