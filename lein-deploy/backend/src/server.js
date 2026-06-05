@@ -17,6 +17,7 @@ import { fileURLToPath } from "node:url";
 import { leinTurn, getModel } from "./lein.js";
 import { getStatus, addActiveSeconds, DAILY_LIMIT_SECONDS } from "./usage.js";
 import { synthesize, hasTTS } from "./tts.js";
+import { transcribe, hasSTT } from "./stt.js";
 
 // Carpeta del frontend (../../frontend respecto a este archivo).
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -65,6 +66,21 @@ function readBody(req) {
   });
 }
 
+// Lee el cuerpo como binario (para el audio del micrófono).
+function readRawBody(req, limit = 12_000_000) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    let size = 0;
+    req.on("data", (chunk) => {
+      size += chunk.length;
+      if (size > limit) { reject(new Error("audio demasiado grande")); req.destroy(); }
+      else chunks.push(chunk);
+    });
+    req.on("end", () => resolve(Buffer.concat(chunks)));
+    req.on("error", reject);
+  });
+}
+
 const server = http.createServer(async (req, res) => {
   const origin = req.headers.origin || "";
   setCors(res, origin);
@@ -85,7 +101,31 @@ const server = http.createServer(async (req, res) => {
       hasApiKey: Boolean(process.env.ANTHROPIC_API_KEY),
       dailyLimitMinutes: DAILY_LIMIT_SECONDS / 60,
       ttsProvider: hasTTS() ? "openai" : "browser",
+      sttProvider: hasSTT() ? "openai" : "none",
     });
+  }
+
+  // Micrófono: audio del estudiante -> texto (Whisper de OpenAI).
+  if (req.method === "POST" && url.pathname === "/api/stt") {
+    if (!hasSTT()) {
+      return sendJson(res, 200, { error: "no_stt", message: "Sin OPENAI_API_KEY para transcribir." });
+    }
+    let buf;
+    try {
+      buf = await readRawBody(req);
+    } catch {
+      return sendJson(res, 413, { error: "too_large", message: "Audio demasiado largo." });
+    }
+    if (!buf || !buf.length) {
+      return sendJson(res, 400, { error: "no_audio", message: "No llegó audio." });
+    }
+    try {
+      const text = await transcribe(buf, req.headers["content-type"]);
+      return sendJson(res, 200, { text });
+    } catch (err) {
+      console.error("[/api/stt] Error:", err?.message || err);
+      return sendJson(res, 502, { error: "stt_error", message: err?.message || "Error transcribiendo." });
+    }
   }
 
   // Voz premium de Lein (audio mp3). Si no hay llave de OpenAI, avisa para que
