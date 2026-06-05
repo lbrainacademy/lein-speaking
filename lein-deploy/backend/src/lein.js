@@ -44,7 +44,16 @@ const CORRECTION_INSTRUCTION =
 - Pick ONLY the single most useful fix per turn — never list several. Never give a grammar lecture or use grammar terms; just show the natural correct form.
 - For beginners (A1/A1+), keep it extra gentle and simple. Write the correction in ENGLISH ONLY — do NOT add Spanish translations (the separate "hint" field already provides Spanish help when needed).
 - If there is no notable mistake, set "correction" to null.
-- Keep your spoken "say" warm and flowing; the app will read the correction out loud right after it.`;
+- Keep your spoken "say" warm and flowing. The app reads the correction out loud FIRST (right after the student speaks) and THEN your "say". So write "say" so it flows naturally as the part that comes AFTER a quick correction — do NOT repeat the correction inside "say".`;
+
+// Anti-deriva: mantener a Lein consistente turno a turno (evita que "se vuelva
+// loco" tras varios turnos: re-saludar, repetir preguntas, cambiar de tema/nivel).
+const CONSISTENCY =
+`STAY ON TRACK ACROSS TURNS:
+- Read the whole conversation so far before replying, and build directly on what the student just said. Keep ONE clear thread.
+- Do NOT greet again, and do NOT ask the student's name again once you know it.
+- Do NOT repeat a question you already asked, and do NOT suddenly change the topic or the difficulty level. Keep the same warm persona and the same level the entire session.
+- If the student gives a short or empty answer, gently help them expand on the SAME topic — don't jump to a new one.`;
 
 // Regla global de BREVEDAD: Lein habla poco; el estudiante habla más.
 const BREVITY =
@@ -150,6 +159,11 @@ export async function leinTurn({ text, history = [], level = "A1", mission = nul
   // 2a-brief. Lein habla POCO; el estudiante debe hablar más.
   system = system + "\n\n" + BREVITY;
 
+  // 2a-track. Consistencia turno a turno (no en el placement, que tiene su guion).
+  if (!placement) {
+    system = system + "\n\n" + CONSISTENCY;
+  }
+
   // 2a-bis. Corrección suave y explícita (no en el placement).
   if (!placement) {
     system = system + "\n\n" + CORRECTION_INSTRUCTION;
@@ -177,7 +191,7 @@ export async function leinTurn({ text, history = [], level = "A1", mission = nul
   // 4. Llamar a Claude.
   const response = await getClient().messages.create({
     model: getModel(),
-    max_tokens: 400, // las respuestas de Lein son cortas (es voz)
+    max_tokens: 700, // margen para que el JSON NUNCA se corte (texto+corrección+ideas); Lein igual habla corto por BREVITY
     thinking: { type: "disabled" }, // mínima latencia
     system: [
       {
