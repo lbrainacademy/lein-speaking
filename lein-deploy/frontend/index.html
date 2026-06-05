@@ -488,6 +488,7 @@
   let audioUnlocked = false;
   let selectedVoice = localStorage.getItem("lein_voice") || "shimmer"; // voz elegida en el selector
   let speakSeq = 0; // token: solo el audio más reciente suena (evita encimar voces)
+  let welcomeUrl = null; // saludo pre-generado para que suene al instante
   const leinAudio = new Audio();
   const SILENT = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
   // Un toque del usuario "desbloquea" el audio en móviles (clave en iPhone).
@@ -551,6 +552,32 @@
     speakBrowser(clean, rate, onend);
   }
 
+  // Pre-genera el saludo de bienvenida (para que suene al instante en "Empezar").
+  async function precacheWelcome(){
+    try{
+      const res = await fetch(API + "/api/tts", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ text:"Welcome to your speaking practice! I'm Lane.", level:"A2", voice:selectedVoice })
+      });
+      if(res.ok && (res.headers.get("content-type")||"").includes("audio")){
+        welcomeUrl = URL.createObjectURL(await res.blob());
+      }
+    }catch(e){}
+  }
+  function playWelcome(){
+    if(welcomeUrl){
+      try{ speechSynthesis.cancel(); }catch(e){}
+      const myToken=++speakSeq;
+      leinAudio.src=welcomeUrl; leinAudio.currentTime=0;
+      leinState("talking");
+      leinAudio.onended=()=>{ leinState("idle"); };
+      leinAudio.onerror=()=>{ leinState("idle"); };
+      leinAudio.play().catch(()=>{ if(myToken===speakSeq) speak("Welcome to your speaking practice! I'm Lein."); });
+    } else {
+      speak("Welcome to your speaking practice! I'm Lein.");
+    }
+  }
+
   // ---------- Pantallas ----------
   function show(id){
     document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
@@ -571,9 +598,9 @@
       // Moodle ya mandó el nivel: entra directo (el saludo es el de Lein en el nivel).
       startChat(URL_LEVEL);
     } else {
-      // Bienvenida una sola vez; el saludo del nivel viene después, sin cruzarse.
+      // Bienvenida una sola vez (pre-generada = suena al instante).
       show("levelScreen");
-      speak("Welcome to your speaking practice! I'm Lein.");
+      playWelcome();
     }
   };
 
@@ -787,7 +814,7 @@
   document.getElementById("input").addEventListener("keydown", e=>{ if(e.key==="Enter") submit(); });
 
   // ---------- Micrófono (voz -> texto) ----------
-  let mediaStream=null, mediaRecorder=null, recChunks=[], recAudioCtx=null, vadRAF=null, recording=false;
+  let mediaStream=null, mediaRecorder=null, recChunks=[], recAudioCtx=null, vadInt=null, recording=false, recProcessed=false, recMaxTimer=null;
 
   function setMicStatus(html){
     const s=document.getElementById("micStatus");
@@ -817,31 +844,37 @@
     if(recording || busy || blocked) return;
     try{
       const stream = await ensureMic();
-      setMicStatus("");
-      recChunks=[];
+      recChunks=[]; recProcessed=false;
       const mime=pickMime();
       mediaRecorder = new MediaRecorder(stream, mime?{mimeType:mime}:undefined);
       mediaRecorder.ondataavailable = e=>{ if(e.data && e.data.size) recChunks.push(e.data); };
       mediaRecorder.onstop = onRecStop;
-      mediaRecorder.start();
+      mediaRecorder.start(500);
       recording=true;
       setMicUI("recording");
+      setMicStatus("🎙️ Te escucho… habla, y cuando termines se envía solo.");
       leinState("listening");
       startVAD(stream);
+      recMaxTimer=setTimeout(()=>{ if(recording) stopRecording(); }, 20000); // tope duro de respaldo
     }catch(err){ handleMicError(err); }
   }
   function stopRecording(){
     if(!recording) return;
     recording=false;
+    if(recMaxTimer){ clearTimeout(recMaxTimer); recMaxTimer=null; }
     stopVAD();
-    try{ mediaRecorder.stop(); }catch(e){}
-    leinState("idle");
+    setMicStatus("");
     setMicUI("transcribing");
+    leinState("idle");
+    try{ mediaRecorder.stop(); }catch(e){ onRecStop(); }
+    // Respaldo: si onstop no dispara (pasa en algunos móviles), procesamos igual.
+    setTimeout(()=>{ onRecStop(); }, 1800);
   }
   async function onRecStop(){
+    if(recProcessed) return; recProcessed=true;
     const blob=new Blob(recChunks,{type:(mediaRecorder && mediaRecorder.mimeType)||"audio/webm"});
     recChunks=[];
-    if(!blob.size){ setMicUI("idle"); return; }
+    if(!blob.size){ setMicUI("idle"); setMicStatus("No te escuché 🙉 — toca el micro e intenta otra vez."); return; }
     try{
       const res=await fetch(API+"/api/stt",{method:"POST",headers:{"Content-Type":blob.type},body:blob});
       const data=await res.json();
@@ -851,30 +884,45 @@
       else { setMicStatus("No te escuché bien 🙉 — toca el micro e intenta otra vez."); }
     }catch(e){ setMicUI("idle"); setMicStatus("Hubo un problema con el audio. Intenta de nuevo."); }
   }
-  // Detección de silencio: cuando dejas de hablar, se envía solo.
+
+  // Detector de voz con CALIBRACIÓN del ruido ambiente (se adapta al lugar).
   function startVAD(stream){
     try{
       recAudioCtx=new (window.AudioContext||window.webkitAudioContext)();
+      if(recAudioCtx.state==="suspended"){ try{ recAudioCtx.resume(); }catch(e){} } // clave en móvil
       const src=recAudioCtx.createMediaStreamSource(stream);
       const an=recAudioCtx.createAnalyser(); an.fftSize=512;
       src.connect(an);
       const data=new Uint8Array(an.fftSize);
-      let spoke=false, silenceStart=null; const t0=Date.now();
-      const SILENCE=0.014, MAXSIL=1500, MAXLEN=30000;
-      function loop(){
+      const t0=Date.now();
+      let noiseFloor=0.01, calibN=0, calibrating=true;
+      let spoke=false, silenceStart=null;
+      vadInt=setInterval(()=>{
         if(!recording) return;
         an.getByteTimeDomainData(data);
         let sum=0; for(let i=0;i<data.length;i++){ const v=(data[i]-128)/128; sum+=v*v; }
         const rms=Math.sqrt(sum/data.length); const now=Date.now();
-        if(rms>SILENCE){ spoke=true; silenceStart=null; }
-        else if(spoke){ if(silenceStart===null) silenceStart=now; else if(now-silenceStart>MAXSIL){ stopRecording(); return; } }
-        if(now-t0>MAXLEN){ stopRecording(); return; }
-        vadRAF=requestAnimationFrame(loop);
-      }
-      vadRAF=requestAnimationFrame(loop);
-    }catch(e){}
+        // 1) Calibrar el ruido del lugar los primeros ~450ms (no hables aún).
+        if(calibrating){
+          noiseFloor=(noiseFloor*calibN+rms)/(calibN+1); calibN++;
+          if(now-t0>450) calibrating=false;
+          return;
+        }
+        // 2) Umbrales relativos al ruido medido.
+        const speakTh=Math.max(0.022, noiseFloor*2.2+0.012); // tu voz, claramente sobre el ruido
+        const silTh  =Math.max(0.016, noiseFloor*1.5+0.006); // silencio = cerca del ruido
+        if(rms>speakTh){ spoke=true; silenceStart=null; }
+        else if(spoke && rms<silTh){
+          if(silenceStart===null) silenceStart=now;
+          else if(now-silenceStart>1200){ stopRecording(); return; } // ~1.2s callado -> enviar
+        } else if(spoke){ silenceStart=null; }
+        // Si nunca detecta voz en 7s, no colgar.
+        if(!spoke && now-t0>7000){ setMicStatus("No te escuché 🙉 — toca el micro e intenta otra vez."); stopRecording(); return; }
+        if(now-t0>20000){ stopRecording(); return; } // tope duro
+      }, 80);
+    }catch(e){ /* el tope de startRecording cierra si algo falla */ }
   }
-  function stopVAD(){ if(vadRAF) cancelAnimationFrame(vadRAF); vadRAF=null; if(recAudioCtx){ try{recAudioCtx.close();}catch(e){} recAudioCtx=null; } }
+  function stopVAD(){ if(vadInt){ clearInterval(vadInt); vadInt=null; } if(recAudioCtx){ try{recAudioCtx.close();}catch(e){} recAudioCtx=null; } }
 
   function handleMicError(err){
     recording=false; setMicUI("idle");
@@ -978,6 +1026,7 @@
       dr.onclick = ()=>{ if(!busy && !placementMode){ recapDone = true; sendToLein("", false, true); } };
     }
     if(h.ttsProvider === "openai"){
+      precacheWelcome(); // pre-genera el saludo para que suene al instante
       const vp = document.getElementById("voicePick");
       vp.classList.add("show");
       vp.querySelectorAll("button").forEach(b=>{
@@ -1017,8 +1066,15 @@
     // Seguridad: dejarlas visibles aunque la animación no corra.
     setTimeout(()=>{ words.forEach(w=>{ w.style.opacity="1"; w.style.transform="none"; }); }, 150 + words.length*240 + 900);
   }
-  // Desbloquea el audio del título al primer toque (por reglas del navegador).
-  window.addEventListener("pointerdown", ()=>{ try{ if(_actx && _actx.state==="suspended") _actx.resume(); }catch(e){} }, { once:true });
+  // Los navegadores no permiten sonido antes del primer toque. Así que en el
+  // PRIMER toque desbloqueamos el audio y reproducimos el título con su sonido.
+  let firstTouchDone=false;
+  window.addEventListener("pointerdown", ()=>{
+    if(firstTouchDone) return; firstTouchDone=true;
+    try{ if(_actx && _actx.state==="suspended") _actx.resume(); }catch(e){}
+    try{ unlockAudio(); }catch(e){}
+    if(document.getElementById("welcome").classList.contains("active")) dropTitle();
+  }, { once:true });
 
   // estado inicial
   renderBrain();
