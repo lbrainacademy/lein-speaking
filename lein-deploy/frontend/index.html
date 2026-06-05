@@ -22,8 +22,8 @@
   body::after{content:"";position:fixed;inset:0;pointer-events:none;opacity:.04;
     background-image:radial-gradient(#fff 1px,transparent 1px);background-size:3px 3px;}
 
-  .screen{min-height:100dvh;display:none;flex-direction:column;align-items:center;
-    justify-content:center;gap:22px;padding:28px;text-align:center}
+  .screen{min-height:100vh;min-height:100dvh;display:none;flex-direction:column;align-items:center;
+    justify-content:safe center;gap:22px;padding:28px;text-align:center;overflow-y:auto}
   .screen.active{display:flex}
 
   /* ---------- Avatar (de lein-identidad-cerebro.html) ---------- */
@@ -177,7 +177,7 @@
   .vp-row button.loading{animation:vppulse .7s ease-in-out infinite}
 
   /* ---------- Chat ---------- */
-  #chat{display:none;flex-direction:column;height:100dvh;max-width:720px;margin:0 auto;width:100%}
+  #chat{display:none;flex-direction:column;height:100vh;height:100dvh;max-width:720px;margin:0 auto;width:100%;overflow:hidden}
   #chat.active{display:flex}
   .topbar{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.07)}
   .topbar .mini{width:44px;height:44px;flex:0 0 44px}
@@ -185,7 +185,7 @@
   .topbar .lvl{font-size:14px;color:#9a8a7a;margin-top:4px}
   .timepill{margin-left:auto;font-size:17px;color:#cdbfb0;background:rgba(255,255,255,.06);
     border:1px solid rgba(255,140,66,.2);padding:8px 14px;border-radius:999px;white-space:nowrap}
-  .feed{flex:1;overflow-y:auto;padding:22px 18px;display:flex;flex-direction:column;gap:18px}
+  .feed{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:22px 18px;display:flex;flex-direction:column;gap:18px}
   .bubble{max-width:90%;padding:17px 20px;border-radius:22px;font-size:24px;line-height:1.5;word-wrap:break-word}
   .lein{align-self:flex-start;background:rgba(255,255,255,.07);border:1px solid rgba(255,140,66,.18);border-bottom-left-radius:6px}
   .me{align-self:flex-end;background:linear-gradient(120deg,var(--orange),var(--deep));color:#1a120a;border-bottom-right-radius:6px;font-weight:500}
@@ -221,6 +221,13 @@
   .chatAvatar.listening .mark svg,.chatAvatar.talking .mark svg{filter:drop-shadow(0 2px 4px rgba(0,0,0,.65)) drop-shadow(0 0 28px rgba(255,195,105,.8))}
   .chatAvatar .ring{width:184px;height:184px;border-color:rgba(255,160,80,.5);z-index:1}
   .chatAvatar .eq{bottom:20px;z-index:3}
+  /* En pantallas bajas (celulares), achicar el avatar del chat para que la barra del micrófono siempre se vea */
+  @media (max-height:720px){
+    .chatAvatar{height:120px}
+    .chatAvatar .mark{width:84px;height:84px}
+    .chatAvatar .ring{width:104px;height:104px}
+    .chatAvatar::before{width:150px;height:150px}
+  }
   .composer{display:flex;gap:10px;padding:14px 16px;border-top:1px solid rgba(255,255,255,.07);align-items:center}
   .composer input{flex:1;background:rgba(255,255,255,.07);border:1px solid rgba(255,140,66,.25);
     color:#f3ece4;font-size:21px;font-family:inherit;padding:18px 21px;border-radius:999px;outline:none}
@@ -494,7 +501,9 @@
   // Un toque del usuario "desbloquea" el audio en móviles (clave en iPhone).
   function unlockAudio(){
     if(audioUnlocked) return;
-    try{ leinAudio.src = SILENT; leinAudio.play().then(()=>{ leinAudio.pause(); audioUnlocked=true; }).catch(()=>{}); }catch(e){}
+    audioUnlocked=true;
+    try{ leinAudio.src = SILENT; leinAudio.play().then(()=>{ leinAudio.pause(); }).catch(()=>{}); }catch(e){}
+    try{ unlockBeeps(); }catch(e){}
   }
 
   // Voz del navegador (respaldo).
@@ -512,9 +521,10 @@
   }
 
   // Habla: intenta la voz premium del servidor; si no hay, usa la del navegador.
-  async function speak(text, rate, onend){
+  async function speak(text, rate, onend, onStart){
+    let _started=false; const fireStart=()=>{ if(_started) return; _started=true; try{ onStart && onStart(); }catch(e){} };
     const clean = cleanForSpeech(text);
-    if(!clean){ if(onend) onend(); return; }
+    if(!clean){ fireStart(); if(onend) onend(); return; }
     const myToken = ++speakSeq;                 // marca este turno de voz
     try{ leinAudio.pause(); }catch(e){}          // corta lo que estuviera sonando
     try{ speechSynthesis.cancel(); }catch(e){}
@@ -746,10 +756,9 @@
         })
       });
       const data = await res.json();
-      hideTyping();
 
-      if (data.limitReached){ goBlocked(data.message); return; }
-      if (data.error){ addBubble("(Ups: " + (data.message||data.error) + ")", "lein"); return; }
+      if (data.limitReached){ hideTyping(); goBlocked(data.message); return; }
+      if (data.error){ hideTyping(); addBubble("(Ups: " + (data.message||data.error) + ")", "lein"); return; }
 
       const wasPlacement = placementMode; // ¿este turno fue del test de ubicación?
       const isResult = !!data.placement;  // ¿es el turno donde Lein dice tu nivel?
@@ -770,27 +779,37 @@
       lastSay = data.say || "";
       history.push({role:"assistant", content:lastSay});
 
-      // El resultado del placement y el RECAP final SÍ se muestran como texto.
-      if (isResult || isRecap || showTranscript()) {
-        addBubble(lastSay, "lein");
-        addHint(data.hint);
-      } else {
-        addListenBubble(); // B1+/placement: solo escuchar, sin texto
-      }
-      // Corrección suave: SIEMPRE visible (también en B1+), para que la noten.
-      // Se acumula para el repaso final (no durante el propio recap).
-      if (!wasPlacement && !isRecap && data.correction){
-        addCorrection(data.correction);
-        sessionCorrections.push(data.correction);
-      }
-      // Sugerencias: solo en conversación normal. En el placement NO se dan
-      // opciones — necesitamos oír las palabras propias del estudiante.
-      if (!wasPlacement) addSuggestions(data.suggestions);
-      // Lein DICE la respuesta y, si hubo error, también dice el tip de corrección.
+      // El texto aparece EXACTAMENTE cuando Lein empieza a hablar (más natural).
+      // Hasta entonces se mantiene el "escribiendo…".
+      let _revealed = false;
+      const reveal = ()=>{
+        if (_revealed) return; _revealed = true;
+        hideTyping();
+        // 1º La corrección suave (PRIMERO, para que la note antes de la pregunta).
+        //    Siempre visible (también en B1+). Se acumula para el repaso final.
+        if (!wasPlacement && !isRecap && data.correction){
+          addCorrection(data.correction);
+          sessionCorrections.push(data.correction);
+        }
+        // 2º La respuesta/pregunta de Lein. Placement y RECAP SÍ muestran texto.
+        if (isResult || isRecap || showTranscript()) {
+          addBubble(lastSay, "lein");
+          addHint(data.hint);
+        } else {
+          addListenBubble(); // B1+/placement: solo escuchar, sin texto
+        }
+        // Sugerencias: solo en conversación normal. En el placement NO se dan
+        // opciones — necesitamos oír las palabras propias del estudiante.
+        if (!wasPlacement) addSuggestions(data.suggestions);
+      };
+
+      // Lein DICE primero el tip de corrección y LUEGO la pregunta (así el alumno
+      // no olvida qué dijo mal antes de oír la siguiente pregunta).
       const toSpeak = (!isRecap && !wasPlacement && data.correction)
-        ? (lastSay + " ... Quick tip: " + data.correction)
+        ? ("Quick tip: " + data.correction + " ... " + lastSay)
         : lastSay;
-      speak(toSpeak);
+      speak(toSpeak, null, null, reveal); // reveal corre al ARRANCAR la voz
+      setTimeout(reveal, 6000); // respaldo: si la voz no arranca, mostrar igual
 
       if (data._timeStatus) updateTime(data._timeStatus);
     }catch(err){
@@ -1041,20 +1060,25 @@
     }
   }).catch(()=>{});
 
-  // Sonido corto "fun" (sintetizado, sin archivo) por cada palabra que cae.
-  let _actx;
-  function pop(i){
-    try{
-      _actx = _actx || new (window.AudioContext || window.webkitAudioContext)();
-      if(_actx.state === "suspended") _actx.resume();
-      const o=_actx.createOscillator(), g=_actx.createGain(), t=_actx.currentTime;
-      o.type="triangle"; o.frequency.value = 360 + i*130;
-      g.gain.setValueAtTime(0.0001,t);
-      g.gain.exponentialRampToValueAtTime(0.3, t+0.02);
-      g.gain.exponentialRampToValueAtTime(0.0001, t+0.22);
-      o.connect(g).connect(_actx.destination); o.start(t); o.stop(t+0.24);
-    }catch(e){}
+  // Sonido corto "fun" por palabra, como mini-archivo de audio (suena en iPhone
+  // aunque tenga el interruptor de silencio, igual que la voz).
+  let _actx; // (se conserva por compatibilidad; ya no se usa para el sonido)
+  function makeBeepUrl(freq, ms){
+    const sr=8000, n=Math.floor(sr*ms/1000), buf=new ArrayBuffer(44+n*2), dv=new DataView(buf);
+    let p=0; const w=s=>{ for(let i=0;i<s.length;i++) dv.setUint8(p++, s.charCodeAt(i)); };
+    w("RIFF"); dv.setUint32(p,36+n*2,true);p+=4; w("WAVE"); w("fmt ");
+    dv.setUint32(p,16,true);p+=4; dv.setUint16(p,1,true);p+=2; dv.setUint16(p,1,true);p+=2;
+    dv.setUint32(p,sr,true);p+=4; dv.setUint32(p,sr*2,true);p+=4; dv.setUint16(p,2,true);p+=2; dv.setUint16(p,16,true);p+=2;
+    w("data"); dv.setUint32(p,n*2,true);p+=4;
+    for(let i=0;i<n;i++){ const t=i/sr, env=Math.exp(-t*13), s=Math.sin(2*Math.PI*freq*t)*env*0.5;
+      dv.setInt16(p, Math.max(-1,Math.min(1,s))*32767, true); p+=2; }
+    let bin=""; const u8=new Uint8Array(buf); for(let i=0;i<u8.length;i++) bin+=String.fromCharCode(u8[i]);
+    return "data:audio/wav;base64,"+btoa(bin);
   }
+  const _beeps=[];
+  (function(){ const notes=[523,587,659,698,784,880,988]; for(const f of notes){ try{ const a=new Audio(makeBeepUrl(f,170)); a.preload="auto"; a.volume=0.5; _beeps.push(a); }catch(e){} } })();
+  function unlockBeeps(){ _beeps.forEach(a=>{ try{ a.muted=true; const pr=a.play(); if(pr&&pr.then) pr.then(()=>{ a.pause(); a.currentTime=0; a.muted=false; }).catch(()=>{ a.muted=false; }); }catch(e){} }); }
+  function pop(i){ try{ const a=_beeps[i % _beeps.length]; if(a){ a.currentTime=0; a.play().catch(()=>{}); } }catch(e){} }
   function dropTitle(){
     const words = document.querySelectorAll("#heroTitle .w");
     const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
