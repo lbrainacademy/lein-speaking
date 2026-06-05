@@ -228,6 +228,19 @@
   .composer button{flex:0 0 auto;border:none;cursor:pointer;background:linear-gradient(120deg,var(--yellow),var(--orange));
     color:#1a120a;font-size:24px;width:62px;height:62px;border-radius:50%;display:grid;place-items:center}
   .composer button:disabled{opacity:.4}
+  /* Botón de micrófono */
+  .micbtn{flex:0 0 auto;cursor:pointer;width:62px;height:62px;border-radius:50%;font-size:26px;
+    display:grid;place-items:center;background:rgba(255,255,255,.08);border:2px solid rgba(255,140,66,.55);
+    color:#f3ece4;transition:transform .12s, background .15s}
+  .micbtn:active{transform:scale(.94)}
+  .micbtn.recording{background:linear-gradient(120deg,#ff5a5a,#e5631c);border-color:#ff8a5a;color:#fff;
+    animation:micpulse 1s ease-in-out infinite}
+  @keyframes micpulse{0%,100%{box-shadow:0 0 0 0 rgba(255,90,90,.55)}50%{box-shadow:0 0 0 14px rgba(255,90,90,0)}}
+  .micbtn.busy{opacity:.55}
+  .micstatus{display:none;text-align:center;font-size:15.5px;color:#cdbfb0;padding:8px 16px 0}
+  .micstatus.show{display:block}
+  .micstatus .actbtn{margin-left:8px;background:var(--orange);color:#1a120a;border:none;border-radius:999px;
+    padding:7px 14px;font-weight:600;cursor:pointer;font-family:inherit;font-size:14px}
   .blocked{position:fixed;inset:0;background:rgba(20,16,25,.92);display:none;flex-direction:column;
     align-items:center;justify-content:center;gap:18px;padding:32px;text-align:center;z-index:50}
   .blocked.active{display:flex}
@@ -339,8 +352,10 @@
       <div class="eq"><i></i><i></i><i></i><i></i><i></i></div>
     </div>
     <div class="feed" id="feed"></div>
+    <div class="micstatus" id="micStatus"></div>
     <div class="composer">
-      <input id="input" type="text" placeholder="Escribe en inglés…" autocomplete="off" autocapitalize="sentences">
+      <input id="input" type="text" placeholder="Toca el micro y habla 🎤  (o escribe)" autocomplete="off" autocapitalize="sentences">
+      <button id="micBtn" class="micbtn" title="Hablar">🎤</button>
       <button id="sendBtn" title="Enviar">➤</button>
     </div>
   </section>
@@ -771,6 +786,114 @@
   document.getElementById("sendBtn").onclick = submit;
   document.getElementById("input").addEventListener("keydown", e=>{ if(e.key==="Enter") submit(); });
 
+  // ---------- Micrófono (voz -> texto) ----------
+  let mediaStream=null, mediaRecorder=null, recChunks=[], recAudioCtx=null, vadRAF=null, recording=false;
+
+  function setMicStatus(html){
+    const s=document.getElementById("micStatus");
+    if(!html){ s.classList.remove("show"); s.innerHTML=""; return; }
+    s.innerHTML=html; s.classList.add("show");
+    const r=document.getElementById("micRetry");
+    if(r) r.onclick=()=>{ setMicStatus(""); mediaStream=null; startRecording(); };
+  }
+  function setMicUI(state){
+    const b=document.getElementById("micBtn"); if(!b) return;
+    b.classList.remove("recording","busy");
+    if(state==="recording"){ b.textContent="⏹"; b.classList.add("recording"); b.title="Detener"; }
+    else if(state==="transcribing"){ b.textContent="…"; b.classList.add("busy"); b.title="Procesando"; }
+    else { b.textContent="🎤"; b.title="Hablar"; }
+  }
+  function pickMime(){
+    const types=["audio/webm;codecs=opus","audio/webm","audio/mp4","audio/aac","audio/ogg"];
+    for(const t of types){ try{ if(window.MediaRecorder && MediaRecorder.isTypeSupported(t)) return t; }catch(e){} }
+    return "";
+  }
+  async function ensureMic(){
+    if(mediaStream) return mediaStream;
+    mediaStream = await navigator.mediaDevices.getUserMedia({ audio:{ echoCancellation:true, noiseSuppression:true, autoGainControl:true } });
+    return mediaStream;
+  }
+  async function startRecording(){
+    if(recording || busy || blocked) return;
+    try{
+      const stream = await ensureMic();
+      setMicStatus("");
+      recChunks=[];
+      const mime=pickMime();
+      mediaRecorder = new MediaRecorder(stream, mime?{mimeType:mime}:undefined);
+      mediaRecorder.ondataavailable = e=>{ if(e.data && e.data.size) recChunks.push(e.data); };
+      mediaRecorder.onstop = onRecStop;
+      mediaRecorder.start();
+      recording=true;
+      setMicUI("recording");
+      leinState("listening");
+      startVAD(stream);
+    }catch(err){ handleMicError(err); }
+  }
+  function stopRecording(){
+    if(!recording) return;
+    recording=false;
+    stopVAD();
+    try{ mediaRecorder.stop(); }catch(e){}
+    leinState("idle");
+    setMicUI("transcribing");
+  }
+  async function onRecStop(){
+    const blob=new Blob(recChunks,{type:(mediaRecorder && mediaRecorder.mimeType)||"audio/webm"});
+    recChunks=[];
+    if(!blob.size){ setMicUI("idle"); return; }
+    try{
+      const res=await fetch(API+"/api/stt",{method:"POST",headers:{"Content-Type":blob.type},body:blob});
+      const data=await res.json();
+      setMicUI("idle");
+      const text=(data.text||"").trim();
+      if(text){ sendToLein(text,false); }
+      else { setMicStatus("No te escuché bien 🙉 — toca el micro e intenta otra vez."); }
+    }catch(e){ setMicUI("idle"); setMicStatus("Hubo un problema con el audio. Intenta de nuevo."); }
+  }
+  // Detección de silencio: cuando dejas de hablar, se envía solo.
+  function startVAD(stream){
+    try{
+      recAudioCtx=new (window.AudioContext||window.webkitAudioContext)();
+      const src=recAudioCtx.createMediaStreamSource(stream);
+      const an=recAudioCtx.createAnalyser(); an.fftSize=512;
+      src.connect(an);
+      const data=new Uint8Array(an.fftSize);
+      let spoke=false, silenceStart=null; const t0=Date.now();
+      const SILENCE=0.014, MAXSIL=1500, MAXLEN=30000;
+      function loop(){
+        if(!recording) return;
+        an.getByteTimeDomainData(data);
+        let sum=0; for(let i=0;i<data.length;i++){ const v=(data[i]-128)/128; sum+=v*v; }
+        const rms=Math.sqrt(sum/data.length); const now=Date.now();
+        if(rms>SILENCE){ spoke=true; silenceStart=null; }
+        else if(spoke){ if(silenceStart===null) silenceStart=now; else if(now-silenceStart>MAXSIL){ stopRecording(); return; } }
+        if(now-t0>MAXLEN){ stopRecording(); return; }
+        vadRAF=requestAnimationFrame(loop);
+      }
+      vadRAF=requestAnimationFrame(loop);
+    }catch(e){}
+  }
+  function stopVAD(){ if(vadRAF) cancelAnimationFrame(vadRAF); vadRAF=null; if(recAudioCtx){ try{recAudioCtx.close();}catch(e){} recAudioCtx=null; } }
+
+  function handleMicError(err){
+    recording=false; setMicUI("idle");
+    const name=(err && err.name) || "";
+    if(name==="NotAllowedError" || name==="SecurityError"){
+      setMicStatus("Micrófono bloqueado. Toca el candado 🔒 de la barra del navegador → Micrófono → Permitir. <button class='actbtn' id='micRetry'>Reintentar</button>");
+    } else if(name==="NotFoundError"){
+      setMicStatus("No encuentro micrófono en este equipo. Puedes escribir mientras tanto.");
+    } else {
+      setMicStatus("No pude usar el micrófono. Puedes escribir, o <button class='actbtn' id='micRetry'>Reintentar</button>");
+    }
+  }
+
+  document.getElementById("micBtn").onclick = ()=>{
+    unlockAudio();
+    if(recording) stopRecording();
+    else startRecording();
+  };
+
   // ---------- Contador de tiempo (tiempo activo) ----------
   let pingTimer=null;
   function startTimeTracking(){
@@ -846,6 +969,8 @@
   }
 
   fetch(API + "/api/health").then(r=>r.json()).then(h=>{
+    // Si no hay transcripción, ocultar el micrófono (queda solo escribir).
+    if (h.sttProvider !== "openai"){ const mb=document.getElementById("micBtn"); if(mb) mb.style.display="none"; }
     // Botón de prueba del repaso (solo en modo desarrollo, cuando el tope es alto).
     if (h.dailyLimitMinutes > 30){
       const dr = document.getElementById("devRecap");
