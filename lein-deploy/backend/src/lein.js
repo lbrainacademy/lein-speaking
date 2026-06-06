@@ -62,6 +62,14 @@ const BREVITY =
 - Never say several things at once or pile up multiple ideas/options. One clear thread per turn.
 - No long preambles or over-explaining. Keep it light and let the student speak.`;
 
+// Cuándo ofrecer opciones de respuesta (campo "suggestions"). Regla para TODOS
+// los niveles: las opciones son un salvavidas, NO el comportamiento normal.
+const SUGGESTIONS_RULE =
+`WHEN TO OFFER ANSWER OPTIONS (the "suggestions" field):
+- By DEFAULT keep "suggestions" as an empty array []. This is SPEAKING practice: let the student answer in their OWN words.
+- ONLY fill "suggestions" (2-3 very short example answers) when the student clearly needs a lifeline: they stayed silent, said "I don't know", answered in Spanish, seemed confused, or got stuck. As soon as they are talking on their own again, go back to [].
+- Options are a rescue, never a default. Do NOT add them just to be helpful.`;
+
 // Niveles donde Lein debe LLEVAR la conversación de forma proactiva.
 const LEAD_LEVELS = ["A2", "B1", "B2", "C1"];
 
@@ -162,6 +170,12 @@ export async function leinTurn({ text, history = [], level = "A1", mission = nul
   // 2a-track. Consistencia turno a turno (no en el placement, que tiene su guion).
   if (!placement) {
     system = system + "\n\n" + CONSISTENCY;
+  }
+
+  // 2a-sugg. Las opciones son un SALVAVIDAS (solo si el alumno se traba), no salen
+  // por defecto. Decisión del dueño: empujar a que hable con sus propias palabras.
+  if (!placement) {
+    system = system + "\n\n" + SUGGESTIONS_RULE;
   }
 
   // 2a-bis. Corrección suave y explícita (no en el placement).
