@@ -761,10 +761,13 @@
       if (data.error){ hideTyping(); addBubble("(Ups: " + (data.message||data.error) + ")", "lein"); return; }
 
       const wasPlacement = placementMode; // ¿este turno fue del test de ubicación?
-      const isResult = !!data.placement;  // ¿es el turno donde Lein dice tu nivel?
+      // SOLO es resultado de nivel si REALMENTE veníamos del test de ubicación.
+      // (Blindaje: si Claude mete "placement" por error en una charla normal, lo
+      //  ignoramos — antes nos cambiaba el nivel a media conversación.)
+      const isResult = wasPlacement && !!data.placement;
 
       // Si era test de ubicación y ya hay nivel, lo aplicamos.
-      if (data.placement){
+      if (wasPlacement && data.placement){
         placementMode = false; level = data.placement;
         document.getElementById("levelLabel").textContent = labelFor(level);
         showToast(`🎉 ¡Tu nivel: ${labelFor(level)}!`); // muestra el nivel amigable
