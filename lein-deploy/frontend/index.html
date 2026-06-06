@@ -185,6 +185,8 @@
   .topbar .lvl{font-size:14px;color:#9a8a7a;margin-top:4px}
   .timepill{margin-left:auto;font-size:17px;color:#cdbfb0;background:rgba(255,255,255,.06);
     border:1px solid rgba(255,140,66,.2);padding:8px 14px;border-radius:999px;white-space:nowrap}
+  .meterpill{margin-left:8px;font-size:14px;color:#8fe39a;background:rgba(80,200,120,.10);
+    border:1px solid rgba(80,200,120,.30);padding:7px 11px;border-radius:999px;white-space:nowrap;font-variant-numeric:tabular-nums}
   .feed{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:22px 18px;display:flex;flex-direction:column;gap:18px}
   .bubble{max-width:90%;padding:17px 20px;border-radius:22px;font-size:24px;line-height:1.5;word-wrap:break-word}
   .lein{align-self:flex-start;background:rgba(255,255,255,.07);border:1px solid rgba(255,140,66,.18);border-bottom-left-radius:6px}
@@ -351,6 +353,7 @@
         <div class="lvl" id="levelLabel">A1</div>
       </div>
       <div class="timepill" id="timePill">10:00</div>
+      <div class="meterpill" id="meterPill" title="Costo de esta sesión (solo para el dueño)" style="display:none">💲—</div>
       <button id="devRecap" class="backbtn" title="Probar repaso (solo pruebas)" style="display:none;width:42px;height:42px;font-size:17px;margin-left:8px">↻</button>
     </div>
     <div class="chatAvatar stage" id="stageChat">
@@ -386,6 +389,7 @@
   localStorage.setItem("lein_sid", STUDENT_ID);
   const STUDENT_NAME = params.get("name") || "";
   const URL_LEVEL = params.get("level"); // si Moodle ya manda el nivel
+  const METER = params.get("meter") === "1"; // medidor de costo SOLO para el dueño (?meter=1)
   // Memoria del nombre por estudiante (en este dispositivo). En producción,
   // Moodle puede mandar el nombre en la URL (?name=) y manda siempre.
   const NAME_KEY = "lein_name_" + STUDENT_ID;
@@ -532,7 +536,7 @@
       try{
         const res = await fetch(API + "/api/tts", {
           method:"POST", headers:{"Content-Type":"application/json"},
-          body: JSON.stringify({ text: clean, level, voice: selectedVoice })
+          body: JSON.stringify({ text: clean, level, voice: selectedVoice, studentId: STUDENT_ID })
         });
         if(myToken !== speakSeq) return;         // llegó una voz más nueva: descartar esta
         const ct = res.headers.get("content-type") || "";
@@ -628,6 +632,7 @@
     document.getElementById("levelLabel").textContent = labelFor(lvl);
     resetChat();
     show("chat");
+    if(METER){ const p=document.getElementById("meterPill"); if(p){ p.style.display="inline-block"; p.textContent="💲0.0000"; } }
     startTimeTracking();
     refreshTime();
     // Primer turno: pedimos a Lein que abra la conversación.
@@ -815,6 +820,7 @@
       setTimeout(reveal, 6000); // respaldo: si la voz no arranca, mostrar igual
 
       if (data._timeStatus) updateTime(data._timeStatus);
+      if (data._cost) updateMeter(data._cost);
     }catch(err){
       hideTyping();
       addBubble("(No pude conectar con Lein. ¿El servidor está encendido?)", "lein");
@@ -907,7 +913,7 @@
     releaseMic();
     if(!blob.size){ setMicUI("idle"); setMicStatus("No te escuché 🙉 — toca el micro e intenta otra vez."); return; }
     try{
-      const res=await fetch(API+"/api/stt",{method:"POST",headers:{"Content-Type":blob.type},body:blob});
+      const res=await fetch(API+"/api/stt?studentId="+encodeURIComponent(STUDENT_ID),{method:"POST",headers:{"Content-Type":blob.type},body:blob});
       const data=await res.json();
       setMicUI("idle");
       const text=(data.text||"").trim();
@@ -997,6 +1003,15 @@
       const r = await fetch(API + "/api/usage/status?studentId=" + encodeURIComponent(STUDENT_ID));
       updateTime(await r.json());
     }catch(e){}
+  }
+  // Medidor de costo (SOLO si la URL trae ?meter=1). Los alumnos no lo ven.
+  function updateMeter(cost){
+    if(!METER || !cost) return;
+    const pill = document.getElementById("meterPill");
+    if(!pill) return;
+    pill.style.display = "inline-block";
+    pill.textContent = "💲" + (cost.sessionUSD||0).toFixed(4) + " · " + (cost.turns||0) + "t";
+    pill.title = "Sesión hoy: $" + (cost.sessionUSD||0).toFixed(4) + " · último turno: $" + (cost.turnUSD||0).toFixed(4) + " (solo dueño)";
   }
   function updateTime(st){
     if(!st) return;
