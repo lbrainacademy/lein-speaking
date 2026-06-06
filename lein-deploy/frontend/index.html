@@ -177,7 +177,7 @@
   .vp-row button.loading{animation:vppulse .7s ease-in-out infinite}
 
   /* ---------- Chat ---------- */
-  #chat{display:none;flex-direction:column;height:100vh;height:100dvh;max-width:720px;margin:0 auto;width:100%;overflow:hidden}
+  #chat{display:none;flex-direction:column;height:100vh;height:100dvh;height:var(--app-h,100dvh);max-width:720px;margin:0 auto;width:100%;overflow:hidden}
   #chat.active{display:flex}
   .topbar{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.07)}
   .topbar .mini{width:44px;height:44px;flex:0 0 44px}
@@ -927,16 +927,19 @@
           if(now-t0>450) calibrating=false;
           return;
         }
-        // 2) Umbrales relativos al ruido medido.
-        const speakTh=Math.max(0.022, noiseFloor*2.2+0.012); // tu voz, claramente sobre el ruido
-        const silTh  =Math.max(0.016, noiseFloor*1.5+0.006); // silencio = cerca del ruido
+        // 2) Umbrales relativos al ruido medido. Más SENSIBLE que antes, y con el
+        //    ruido topado para que un lugar ruidoso no deje a Lein "sordo".
+        const nf=Math.min(noiseFloor, 0.03);
+        const speakTh=Math.max(0.016, nf*1.8+0.009); // tu voz sobre el ruido
+        const silTh  =Math.max(0.011, nf*1.3+0.004); // silencio = cerca del ruido
         if(rms>speakTh){ spoke=true; silenceStart=null; }
         else if(spoke && rms<silTh){
           if(silenceStart===null) silenceStart=now;
-          else if(now-silenceStart>1200){ stopRecording(); return; } // ~1.2s callado -> enviar
+          else if(now-silenceStart>1300){ stopRecording(); return; } // ~1.3s callado -> enviar
         } else if(spoke){ silenceStart=null; }
-        // Si nunca detecta voz en 7s, no colgar.
-        if(!spoke && now-t0>7000){ setMicStatus("No te escuché 🙉 — toca el micro e intenta otra vez."); stopRecording(); return; }
+        // Si no detecta voz CLARA en 8s, NO botamos el audio: lo mandamos igual y
+        // que Whisper decida (a veces la voz es baja y el detector no la marca).
+        if(!spoke && now-t0>8000){ stopRecording(); return; }
         if(now-t0>20000){ stopRecording(); return; } // tope duro
       }, 80);
     }catch(e){ /* el tope de startRecording cierra si algo falla */ }
@@ -1099,6 +1102,18 @@
     try{ unlockAudio(); }catch(e){}
     if(document.getElementById("welcome").classList.contains("active")) dropTitle();
   }, { once:true });
+
+  // Altura REAL de la pantalla visible (en móvil la barra del navegador cambia
+  // el alto; 100dvh no siempre funciona en iPhone viejo). Así el micrófono SIEMPRE
+  // queda abajo, sin tener que hacer scroll.
+  function setAppHeight(){
+    const h = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+    if(h) document.documentElement.style.setProperty("--app-h", h + "px");
+  }
+  setAppHeight();
+  window.addEventListener("resize", setAppHeight);
+  window.addEventListener("orientationchange", ()=> setTimeout(setAppHeight, 300));
+  if(window.visualViewport){ window.visualViewport.addEventListener("resize", setAppHeight); }
 
   // estado inicial
   renderBrain();
