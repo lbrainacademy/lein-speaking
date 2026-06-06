@@ -23,12 +23,24 @@ const RESET_TZ = process.env.DAILY_RESET_TZ || "America/Chicago";
 
 const num = (v, d) => (v === undefined || v === "" || isNaN(Number(v)) ? d : Number(v));
 
-// --- Tarifas (USD) ---
+// --- Tarifas de Claude (USD por millón de tokens), SEGÚN el modelo en uso ---
+// Así el medidor muestra el costo REAL aunque cambies de modelo (Haiku/Sonnet/Opus).
+// Se puede forzar con env CLAUDE_USD_* si las tarifas cambian.
+const PRICES = {
+  haiku:  { in: 1,  out: 5,  cw: 1.25,  cr: 0.10 },
+  sonnet: { in: 3,  out: 15, cw: 3.75,  cr: 0.30 },
+  opus:   { in: 15, out: 75, cw: 18.75, cr: 1.50 },
+};
+const MODEL_NAME = (process.env.MODEL || "claude-sonnet-4-6").toLowerCase();
+const family = MODEL_NAME.includes("haiku") ? "haiku"
+             : MODEL_NAME.includes("opus")  ? "opus"
+             : "sonnet";
+const P = PRICES[family];
 const CLAUDE = {
-  in:        num(process.env.CLAUDE_USD_IN, 3) / 1e6,          // entrada normal
-  out:       num(process.env.CLAUDE_USD_OUT, 15) / 1e6,        // salida
-  cacheWrite:num(process.env.CLAUDE_USD_CACHE_WRITE, 3.75) / 1e6,
-  cacheRead: num(process.env.CLAUDE_USD_CACHE_READ, 0.30) / 1e6,
+  in:        num(process.env.CLAUDE_USD_IN, P.in) / 1e6,
+  out:       num(process.env.CLAUDE_USD_OUT, P.out) / 1e6,
+  cacheWrite:num(process.env.CLAUDE_USD_CACHE_WRITE, P.cw) / 1e6,
+  cacheRead: num(process.env.CLAUDE_USD_CACHE_READ, P.cr) / 1e6,
 };
 const TTS_USD_PER_MIN   = num(process.env.TTS_USD_PER_MIN, 0.015);
 const TTS_CHARS_PER_SEC = num(process.env.TTS_CHARS_PER_SEC, 14);  // ~ritmo de habla
