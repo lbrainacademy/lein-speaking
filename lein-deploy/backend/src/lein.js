@@ -42,6 +42,7 @@ const CORRECTION_INSTRUCTION =
 - When the student makes a meaningful English mistake, set "correction" to a SHORT, friendly note showing the better version, phrased as a natural sentence Lein could SAY OUT LOUD, e.g. "You said 'I goed', but we say 'I went'." or "Instead of 'I have 25 years', say 'I'm 25 years old'."
 - Do NOT use arrows or symbols (no "->"). Write it as natural spoken words.
 - Pick ONLY the single most useful fix per turn — never list several. Never give a grammar lecture or use grammar terms; just show the natural correct form.
+- CRITICAL: Correct ONLY a mistake in the student's MOST RECENT message. NEVER repeat, re-mention, or carry forward a correction you already gave in an earlier turn. Each "correction" stands alone for the current message. If their latest message has no new notable mistake, set "correction" to null — do NOT recycle an old one.
 - For beginners (A1/A1+), keep it extra gentle and simple. Write the correction in ENGLISH ONLY — do NOT add Spanish translations (the separate "hint" field already provides Spanish help when needed).
 - If there is no notable mistake, set "correction" to null.
 - Keep your spoken "say" warm and flowing. The app reads the correction out loud FIRST (right after the student speaks) and THEN your "say". So write "say" so it flows naturally as the part that comes AFTER a quick correction — do NOT repeat the correction inside "say".`;
@@ -107,7 +108,9 @@ const LEIN_SCHEMA = {
     },
     mission_complete: { type: "boolean" },
   },
-  required: ["say", "hint", "suggestions"],
+  // studentName y correction son obligatorios (pueden ser null) para que el modelo
+  // SIEMPRE los considere: así captura el nombre en cuanto lo oye y no lo omite.
+  required: ["say", "hint", "suggestions", "studentName", "correction"],
   additionalProperties: false,
 };
 
@@ -228,6 +231,11 @@ export async function leinTurn({ text, history = [], level = "A1", mission = nul
     throw new Error("Claude no devolvió texto.");
   }
   const data = JSON.parse(textBlock.text);
+
+  // Blindaje: el campo "placement" SOLO tiene sentido en el test de ubicación.
+  // Si el modelo lo mete por error en una charla normal, lo anulamos para que el
+  // frontend nunca cambie el nivel a media conversación.
+  if (!placement) data.placement = null;
 
   // Adjuntamos uso de tokens (útil para vigilar costo en desarrollo).
   data._usage = {
