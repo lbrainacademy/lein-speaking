@@ -18,6 +18,7 @@ import { leinTurn, getModel } from "./lein.js";
 import { getStatus, addActiveSeconds, DAILY_LIMIT_SECONDS } from "./usage.js";
 import { synthesize, hasTTS } from "./tts.js";
 import { transcribe, hasSTT } from "./stt.js";
+import { claudeCostUSD, ttsCostUSD, sttCostUSD, addCost, getDailyTotals, round4 } from "./cost.js";
 
 // Carpeta del frontend (../../frontend respecto a este archivo).
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -121,6 +122,9 @@ const server = http.createServer(async (req, res) => {
     }
     try {
       const text = await transcribe(buf, req.headers["content-type"]);
+      // Medidor: costo (estimado) de la transcripción, atribuido al estudiante.
+      const sid = url.searchParams.get("studentId") || "anon";
+      addCost(sid, sttCostUSD(buf.length), "stt");
       return sendJson(res, 200, { text });
     } catch (err) {
       console.error("[/api/stt] Error:", err?.message || err);
@@ -141,12 +145,14 @@ const server = http.createServer(async (req, res) => {
     } catch {
       return sendJson(res, 400, { error: "bad_json" });
     }
-    const { text, level = "A1", voice } = payload;
+    const { text, level = "A1", voice, studentId = "anon" } = payload;
     if (!text || typeof text !== "string") {
       return sendJson(res, 400, { error: "missing_text" });
     }
     try {
       const audio = await synthesize(text, level, voice);
+      // Medidor: costo (estimado) de la voz, atribuido al estudiante.
+      addCost(studentId, ttsCostUSD(text), "tts");
       res.writeHead(200, { "Content-Type": "audio/mpeg", "Cache-Control": "no-store" });
       return res.end(audio);
     } catch (err) {
@@ -162,6 +168,36 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 400, { error: "missing_student_id", message: "Falta studentId." });
     }
     return sendJson(res, 200, getStatus(studentId));
+  }
+
+  // Medidor de costo del día (SOLO para el dueño). Protegido con METER_KEY:
+  // - Si NO hay METER_KEY configurada, el endpoint está apagado (404), para no
+  //   exponer el gasto públicamente.
+  // - Si la hay, se consulta con ?key=TU_LLAVE
+  if (req.method === "GET" && url.pathname === "/api/usage/costs") {
+    const key = process.env.METER_KEY;
+    if (!key) {
+      return sendJson(res, 404, { error: "disabled", message: "Define METER_KEY para activar el reporte de costos." });
+    }
+    if (url.searchParams.get("key") !== key) {
+      return sendJson(res, 403, { error: "forbidden", message: "Llave incorrecta (?key=...)." });
+    }
+    const t = getDailyTotals();
+    return sendJson(res, 200, {
+      day: t.day,
+      totalUSD: round4(t.global.total || 0),
+      desglose: {
+        claudeUSD: round4(t.global.claude || 0),
+        vozUSD: round4(t.global.tts || 0),
+        escuchaUSD: round4(t.global.stt || 0),
+      },
+      estudiantesActivos: t.count,
+      porEstudiante: t.students.map((s) => ({
+        studentId: s.studentId,
+        totalUSD: round4(s.total || 0),
+        turnos: s.turns || 0,
+      })),
+    });
   }
 
   // "Latido" desde el frontend mientras el estudiante practica: suma tiempo activo.
@@ -248,6 +284,14 @@ const server = http.createServer(async (req, res) => {
       });
       // Adjuntamos el tiempo restante de hoy para que el frontend lo muestre.
       if (studentId) result._timeStatus = getStatus(studentId);
+
+      // Medidor de costo: Claude es EXACTO (tokens reales). Sumamos al estudiante
+      // y devolvemos el costo de este turno + el total de su sesión de hoy.
+      const turnUSD = claudeCostUSD(result._usage);
+      const rec = addCost(studentId || "anon", turnUSD, "claude", { turn: true });
+      result._cost = { turnUSD: round4(turnUSD), sessionUSD: round4(rec.total), turns: rec.turns };
+      console.log(`[cost] alumno=${studentId || "anon"} turno=$${round4(turnUSD)} sesionHoy=$${round4(rec.total)} (${rec.turns} turnos)`);
+
       return sendJson(res, 200, result);
     } catch (err) {
       console.error("[/api/chat] Error:", err?.message || err);
