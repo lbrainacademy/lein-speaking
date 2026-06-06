@@ -20,8 +20,21 @@ export async function transcribe(buffer, mimetype) {
   const form = new FormData();
   form.append("file", new Blob([buffer], { type: mt }), "audio." + ext);
   form.append("model", model);
-  // No forzamos idioma: el alumno habla inglés, pero un principiante puede
-  // mezclar español; dejamos que el modelo lo detecte.
+
+  // PRECISIÓN: como es práctica de inglés, le decimos al "oído" que ESPERE inglés
+  // (reduce errores tipo "does"->"dance", "Yes"->"Just"). Configurable por env:
+  //   STT_LANGUAGE="" para que vuelva a autodetectar (si algún alumno mezcla español).
+  const lang = process.env.STT_LANGUAGE ?? "en";
+  if (lang) form.append("language", lang);
+
+  // Un "prompt" de contexto ayuda al modelo a interpretar mejor frases cortas y de
+  // estudiantes. No es lo que se transcribe; solo orienta.
+  const prompt = process.env.STT_PROMPT ??
+    "Casual spoken English practice between a friendly tutor and an English learner. Expect short, simple answers like yes, no, I do, I don't, I cook at home.";
+  if (prompt) form.append("prompt", prompt);
+
+  // temperature 0 = lo más literal/estable posible (menos invención).
+  form.append("temperature", "0");
 
   const res = await fetch("https://api.openai.com/v1/audio/transcriptions", {
     method: "POST",
