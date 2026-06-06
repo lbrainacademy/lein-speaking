@@ -18,7 +18,7 @@ import { leinTurn, getModel } from "./lein.js";
 import { getStatus, addActiveSeconds, DAILY_LIMIT_SECONDS } from "./usage.js";
 import { synthesize, hasTTS } from "./tts.js";
 import { transcribe, hasSTT } from "./stt.js";
-import { claudeCostUSD, ttsCostUSD, sttCostUSD, addCost, getDailyTotals, round4 } from "./cost.js";
+import { claudeCostUSD, ttsCostUSD, sttCostUSD, addCost, getDailyTotals, round4, today } from "./cost.js";
 
 // Carpeta del frontend (../../frontend respecto a este archivo).
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -53,6 +53,88 @@ function sendJson(res, status, obj) {
   const body = JSON.stringify(obj);
   res.writeHead(status, { "Content-Type": "application/json; charset=utf-8" });
   res.end(body);
+}
+
+// Escapa texto para meterlo seguro en HTML.
+function esc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+const usd = (n) => "$" + (Math.round(((n || 0) + Number.EPSILON) * 1e4) / 1e4).toFixed(4);
+
+// Página visual del reporte de costos del día (solo el dueño, vía METER_KEY).
+function renderCostsPage(t, key) {
+  const d = new Date(t.day + "T12:00:00Z");
+  const prev = new Date(d.getTime() - 86400000).toISOString().slice(0, 10);
+  const next = new Date(d.getTime() + 86400000).toISOString().slice(0, 10);
+  const link = (day) => `/api/usage/costs?key=${encodeURIComponent(key)}&day=${day}`;
+  const g = t.global || {};
+  const rows = t.students.length
+    ? t.students.map((s, i) => `
+      <tr>
+        <td class="num">${i + 1}</td>
+        <td>${esc(s.name || s.studentId)}</td>
+        <td class="muted">${esc(s.name ? s.studentId : "")}</td>
+        <td class="r">${s.turns || 0}</td>
+        <td class="r strong">${usd(s.total)}</td>
+      </tr>`).join("")
+    : `<tr><td colspan="5" class="muted" style="text-align:center;padding:24px">Aún no hay actividad este día.</td></tr>`;
+  return `<!doctype html><html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Costos · Lein — ${esc(t.day)}</title>
+<style>
+  :root{color-scheme:dark}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    background:#13100e;color:#f1e9e1;padding:18px}
+  .wrap{max-width:760px;margin:0 auto}
+  h1{font-size:22px;margin:0 0 2px}
+  .sub{color:#9a8a7a;font-size:14px;margin-bottom:18px}
+  .nav{display:flex;gap:8px;align-items:center;margin-bottom:18px;flex-wrap:wrap}
+  .nav a,.btn{color:#ffd9b8;text-decoration:none;background:rgba(255,140,66,.12);
+    border:1px solid rgba(255,140,66,.3);padding:7px 12px;border-radius:10px;font-size:14px}
+  .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
+  .card{background:#1d1814;border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:14px}
+  .card .k{font-size:12px;color:#9a8a7a}
+  .card .v{font-size:20px;font-weight:700;margin-top:4px}
+  .card.total .v{color:#8fe39a}
+  table{width:100%;border-collapse:collapse;background:#1d1814;border-radius:14px;overflow:hidden}
+  th,td{padding:11px 12px;text-align:left;border-bottom:1px solid rgba(255,255,255,.06);font-size:15px}
+  th{font-size:12px;color:#9a8a7a;text-transform:uppercase;letter-spacing:.04em}
+  td.r,th.r{text-align:right}
+  td.num{color:#9a8a7a;width:34px}
+  td.muted,.muted{color:#7e7064;font-size:12px}
+  td.strong{font-weight:700;color:#8fe39a}
+  .foot{color:#7e7064;font-size:12px;margin-top:16px;line-height:1.5}
+  @media(max-width:560px){
+    .cards{grid-template-columns:repeat(2,1fr)}
+    th,td{padding:10px 8px;font-size:14px}
+    th:nth-child(3),td:nth-child(3){display:none} /* oculta ID en celular para que el Costo quepa */
+  }
+</style></head><body><div class="wrap">
+  <h1>💲 Costos de Lein</h1>
+  <div class="sub">Día: <strong>${esc(t.day)}</strong> · zona ${esc(process.env.DAILY_RESET_TZ || "America/Chicago")}</div>
+  <div class="nav">
+    <a href="${link(prev)}">← ${prev}</a>
+    <a href="${link(today())}">Hoy</a>
+    <a href="${link(next)}">${next} →</a>
+  </div>
+  <div class="cards">
+    <div class="card total"><div class="k">Total del día</div><div class="v">${usd(g.total)}</div></div>
+    <div class="card"><div class="k">Cerebro</div><div class="v">${usd(g.claude)}</div></div>
+    <div class="card"><div class="k">Voz</div><div class="v">${usd(g.tts)}</div></div>
+    <div class="card"><div class="k">Escucha</div><div class="v">${usd(g.stt)}</div></div>
+  </div>
+  <table>
+    <thead><tr><th>#</th><th>Estudiante</th><th>ID</th><th class="r">Turnos</th><th class="r">Costo</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>
+  <div class="foot">
+    ${t.count} estudiante(s) activo(s) hoy. El costo de Claude (cerebro) es exacto; voz y escucha son estimados.<br>
+    Esta página es privada (requiere tu llave). No la compartas con los alumnos.
+  </div>
+</div></body></html>`;
 }
 
 function readBody(req) {
@@ -182,22 +264,21 @@ const server = http.createServer(async (req, res) => {
     if (url.searchParams.get("key") !== key) {
       return sendJson(res, 403, { error: "forbidden", message: "Llave incorrecta (?key=...)." });
     }
-    const t = getDailyTotals();
-    return sendJson(res, 200, {
-      day: t.day,
-      totalUSD: round4(t.global.total || 0),
-      desglose: {
-        claudeUSD: round4(t.global.claude || 0),
-        vozUSD: round4(t.global.tts || 0),
-        escuchaUSD: round4(t.global.stt || 0),
-      },
-      estudiantesActivos: t.count,
-      porEstudiante: t.students.map((s) => ({
-        studentId: s.studentId,
-        totalUSD: round4(s.total || 0),
-        turnos: s.turns || 0,
-      })),
-    });
+    const day = url.searchParams.get("day") || today();
+    const t = getDailyTotals(day);
+    // JSON crudo si lo piden (?format=json); si no, una PÁGINA bonita para el dueño.
+    if (url.searchParams.get("format") === "json") {
+      return sendJson(res, 200, {
+        day: t.day,
+        totalUSD: round4(t.global.total || 0),
+        desglose: { claudeUSD: round4(t.global.claude || 0), vozUSD: round4(t.global.tts || 0), escuchaUSD: round4(t.global.stt || 0) },
+        estudiantesActivos: t.count,
+        porEstudiante: t.students.map((s) => ({ studentId: s.studentId, name: s.name || null, totalUSD: round4(s.total || 0), turnos: s.turns || 0 })),
+      });
+    }
+    const html = renderCostsPage(t, key);
+    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" });
+    return res.end(html);
   }
 
   // "Latido" desde el frontend mientras el estudiante practica: suma tiempo activo.
@@ -288,7 +369,7 @@ const server = http.createServer(async (req, res) => {
       // Medidor de costo: Claude es EXACTO (tokens reales). Sumamos al estudiante
       // y devolvemos el costo de este turno + el total de su sesión de hoy.
       const turnUSD = claudeCostUSD(result._usage);
-      const rec = addCost(studentId || "anon", turnUSD, "claude", { turn: true });
+      const rec = addCost(studentId || "anon", turnUSD, "claude", { turn: true, name: studentName || result.studentName });
       result._cost = { turnUSD: round4(turnUSD), sessionUSD: round4(rec.total), turns: rec.turns };
       console.log(`[cost] alumno=${studentId || "anon"} turno=$${round4(turnUSD)} sesionHoy=$${round4(rec.total)} (${rec.turns} turnos)`);
 

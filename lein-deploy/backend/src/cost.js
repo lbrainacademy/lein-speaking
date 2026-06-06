@@ -77,9 +77,10 @@ function save(db) { fs.mkdirSync(DATA_DIR, { recursive: true }); fs.writeFileSyn
 const recordKey = (sid, day) => `${sid}::${day}`;
 const GLOBAL = "__ALL__";
 
-const blank = () => ({ total: 0, claude: 0, tts: 0, stt: 0, turns: 0, updatedAt: null });
+const blank = () => ({ name: null, total: 0, claude: 0, tts: 0, stt: 0, turns: 0, updatedAt: null });
 
-/** Suma un costo (kind: 'claude' | 'tts' | 'stt') a un estudiante y al total global. */
+/** Suma un costo (kind: 'claude' | 'tts' | 'stt') a un estudiante y al total global.
+ *  opts.name = nombre del alumno (para el reporte); opts.turn = cuenta un turno. */
 export function addCost(studentId, usd, kind, opts = {}) {
   if (!usd && !opts.turn) return getCost(studentId);
   const day = todayKey();
@@ -90,6 +91,7 @@ export function addCost(studentId, usd, kind, opts = {}) {
     rec.total += usd || 0;
     if (kind && rec[kind] !== undefined) rec[kind] += usd || 0;
     if (opts.turn) rec.turns += 1;
+    if (id !== GLOBAL && opts.name) rec.name = opts.name; // guarda el nombre del alumno
     rec.updatedAt = new Date().toISOString();
     db[k] = rec;
   }
@@ -104,9 +106,11 @@ export function getCost(studentId) {
   return { ...rec, day: todayKey() };
 }
 
-/** Totales del día: global + lista por estudiante (para el dueño). */
-export function getDailyTotals() {
-  const day = todayKey();
+/** Día de hoy (para defaults externos). */
+export const today = () => todayKey();
+
+/** Totales de un día: global + lista por estudiante (para el dueño). */
+export function getDailyTotals(day = todayKey()) {
   const db = load();
   const students = [];
   let global = blank();
