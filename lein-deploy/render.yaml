@@ -5,7 +5,7 @@ services:
     name: lein-speaking
     runtime: node
     plan: starter
-    rootDir: backend
+    rootDir: lein-deploy/backend
     buildCommand: npm install
     startCommand: npm start
     # DISCO PERMANENTE: guarda el reporte de costos y el contador de minutos para
