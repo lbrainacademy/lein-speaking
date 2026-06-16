@@ -457,7 +457,7 @@
   let blocked = false;
   let sessionCorrections = []; // errores acumulados de la sesión (para el recap)
   let recapDone = false;       // ya se hizo el repaso final de los 2 min
-  const RECAP_AT_SECONDS_LEFT = 120; // faltando 2 min, hacer el recap
+  const RECAP_AT_SECONDS_LEFT = 65; // faltando ~1 min (≈8:55), hacer el recap
 
   // ---------- Avatar: clonar SVG en cada .mark ----------
   const tpl = document.getElementById("avatarTpl");
