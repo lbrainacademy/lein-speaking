@@ -5,10 +5,19 @@ services:
     name: lein-speaking
     runtime: node
     plan: starter
-    rootDir: lein-deploy/backend
+    rootDir: backend
     buildCommand: npm install
     startCommand: npm start
+    # DISCO PERMANENTE: guarda el reporte de costos y el contador de minutos para
+    # que NO se borren al redesplegar/reiniciar. 1 GB es de sobra (~$0.25/mes).
+    disk:
+      name: lein-data
+      mountPath: /var/data
+      sizeGB: 1
     envVars:
+      # Carpeta de datos = el disco permanente de arriba.
+      - key: DATA_DIR
+        value: /var/data
       # Estas dos las pegas tú en el panel de Render (no van en el código):
       - key: ANTHROPIC_API_KEY
         sync: false
@@ -16,7 +25,7 @@ services:
         sync: false
       # El resto ya queda configurado:
       - key: MODEL
-        value: claude-sonnet-4-6
+        value: claude-haiku-4-5-20251001
       - key: TTS_MODEL
         value: gpt-4o-mini-tts
       - key: TTS_VOICE
@@ -27,3 +36,8 @@ services:
         value: America/Chicago
       - key: ALLOWED_ORIGINS
         value: "*"
+      # OPCIONAL: llave secreta para ver el reporte de costos del día en
+      # /api/usage/costs?key=TU_LLAVE  (si no la pones, ese reporte queda apagado).
+      # El medidor por sesión en pantalla (?meter=1) funciona sin esto.
+      - key: METER_KEY
+        sync: false
