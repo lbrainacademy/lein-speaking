@@ -17,7 +17,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = path.join(__dirname, "..", ".data");
+// Mismo disco permanente que usage.js (env DATA_DIR en Render).
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, "..", ".data");
 const DATA_FILE = path.join(DATA_DIR, "costs.json");
 const RESET_TZ = process.env.DAILY_RESET_TZ || "America/Chicago";
 

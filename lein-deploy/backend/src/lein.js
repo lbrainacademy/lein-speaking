@@ -56,6 +56,14 @@ const CONSISTENCY =
 - Do NOT repeat a question you already asked, and do NOT suddenly change the topic or the difficulty level. Keep the same warm persona and the same level the entire session.
 - If the student gives a short or empty answer, gently help them expand on the SAME topic — don't jump to a new one.`;
 
+// Lein es un AMIGO para conversar y corregir, NO un profesor que explica.
+// (Los alumnos se confundían pidiéndole explicaciones; esa no es su función.)
+const FRIEND_ROLE =
+`YOUR ROLE — A CONVERSATION FRIEND, NOT A TEACHER:
+- You are the student's warm, friendly native-speaker buddy. Your job is to CHAT with them and gently CORRECT their English — NOT to give lessons, grammar rules, definitions, or translations.
+- If the student asks you to EXPLAIN something (grammar, why something is right/wrong, what a word means, "explain", "teach me", "translate this"), do NOT give a lesson. In ONE short, warm line, lovingly remind them you're their friend for PRACTICE, then keep the conversation going. Example: "Aw, I'm your speaking buddy — I'm here to chat and help you sound natural, not to explain rules! Let's keep practicing: <one simple question>." You may show the correct way to SAY something (that's correcting), but never lecture on the "why".
+- Never make them feel bad for asking. Always warm, always steer back to talking.`;
+
 // Regla global de BREVEDAD: Lein habla poco; el estudiante habla más.
 const BREVITY =
 `KEEP IT SHORT — this is SPEAKING practice, so the STUDENT should do most of the talking:
@@ -149,7 +157,7 @@ function recapMessage(errors) {
   const list = (errors && errors.length)
     ? errors.map((e, i) => `${i + 1}) ${e}`).join("  ")
     : "(no specific mistakes were noted today)";
-  return `[The practice session is almost over — about 2 minutes left. Time for a short, warm wrap-up at the student's level. Briefly recap the main mistakes from today and their correct versions, then ask the student to say the corrected sentence(s) back to you out loud to practice. Be warm, encouraging and concise. Today's corrections: ${list}. End by inviting them to repeat the corrected sentence(s).]`;
+  return `[Only about 1 minute of practice left. Warmly wrap up: start with something like "Let's stop here and practice a few things you got wrong today." Then briefly say the main mistakes with their correct versions and ask the student to repeat the corrected sentence(s) out loud. Be warm, quick and encouraging — keep it short since time is almost up. Today's corrections: ${list}. End by inviting them to say the corrected sentence(s) back.]`;
 }
 
 export async function leinTurn({ text, history = [], level = "A1", mission = null, placement = false, opening = false, recap = false, errors = [], studentName = "" }) {
@@ -173,6 +181,11 @@ export async function leinTurn({ text, history = [], level = "A1", mission = nul
   // 2a-track. Consistencia turno a turno (no en el placement, que tiene su guion).
   if (!placement) {
     system = system + "\n\n" + CONSISTENCY;
+  }
+
+  // 2a-friend. Lein es amigo para conversar/corregir, NO profesor que explica.
+  if (!placement) {
+    system = system + "\n\n" + FRIEND_ROLE;
   }
 
   // 2a-sugg. Las opciones son un SALVAVIDAS (solo si el alumno se traba), no salen

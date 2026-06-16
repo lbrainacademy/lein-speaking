@@ -13,7 +13,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = path.join(__dirname, "..", ".data");
+// DATA_DIR configurable: en Render apunta al DISCO PERMANENTE (env DATA_DIR=/var/data)
+// para que el contador NO se borre al redesplegar/reiniciar. Local: carpeta .data.
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, "..", ".data");
 const DATA_FILE = path.join(DATA_DIR, "usage.json");
 
 // Tope diario en segundos (configurable por env, default 10 minutos).
