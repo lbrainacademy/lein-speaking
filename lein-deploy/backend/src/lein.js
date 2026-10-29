@@ -172,6 +172,17 @@ function openingMessage(level, knownName, returning = false) {
     : "[The session is starting now. Greet the student warmly in English at their level, ask their name, and invite them to tell you a little about themselves so you can get to know them. Keep it to one natural turn ending in a question.]";
 }
 
+// ¿Las palabras que Lein corrige están en el mensaje ACTUAL del alumno?
+// Comparación flexible: al menos ~60% de las palabras de "fix_said".
+function correctionMatches(fixSaid, text) {
+  const words = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9' ]+/g, " ").split(/\s+/).filter(Boolean);
+  const said = words(fixSaid);
+  if (!said.length) return true; // sin detalle: no podemos comprobar, se deja pasar
+  const current = new Set(words(text));
+  const hits = said.filter((w) => current.has(w)).length;
+  return hits / said.length >= 0.6;
+}
+
 // Tema elegido por el alumno ("🎯 Tengo un tema"). Puede venir en español.
 function topicBlock(topic) {
   return `TODAY'S TOPIC: The student chose to talk about: "${topic}". They may have written it in Spanish — understand it, but always speak English at their level. Keep the whole conversation about this topic with practical, everyday questions. Stay on it unless the student clearly changes it.`;
@@ -289,6 +300,14 @@ export async function leinTurn({ text, history = [], level = "A1", mission = nul
   // Si el modelo lo mete por error en una charla normal, lo anulamos para que el
   // frontend nunca cambie el nivel a media conversación.
   if (!placement) data.placement = null;
+
+  // Blindaje: la corrección debe ser de lo que el alumno dijo EN ESTE turno. Si
+  // las palabras corregidas ("fix_said") no aparecen en su mensaje actual, es un
+  // error viejo reciclado: lo descartamos antes de que se lea en voz alta.
+  if (data.correction && !opening && !recap && !placement && !correctionMatches(data.fix_said, text)) {
+    console.log(`[correction] descartada (no está en este turno): "${data.fix_said}"`);
+    data.correction = null; data.fix_said = null; data.fix_better = null;
+  }
 
   // Adjuntamos uso de tokens (útil para vigilar costo en desarrollo).
   data._usage = {
