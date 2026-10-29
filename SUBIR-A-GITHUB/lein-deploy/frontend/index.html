@@ -1,0 +1,1625 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Lein · LBrain Academy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{ --yellow:#FFC83D; --orange:#FF8C42; --deep:#E5631C; --bg:#141019; }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    font-family:'DM Sans',system-ui,sans-serif; color:#f3ece4;
+    background:
+      radial-gradient(900px 600px at 50% 38%, rgba(255,140,66,.14), transparent 60%),
+      radial-gradient(700px 500px at 50% 120%, rgba(229,99,28,.15), transparent 60%),
+      var(--bg);
+    min-height:100dvh; overflow-x:hidden; position:relative;
+  }
+  body::after{content:"";position:fixed;inset:0;pointer-events:none;opacity:.04;
+    background-image:radial-gradient(#fff 1px,transparent 1px);background-size:3px 3px;}
+
+  .screen{min-height:100vh;min-height:100dvh;display:none;flex-direction:column;align-items:center;
+    justify-content:safe center;gap:22px;padding:28px;text-align:center;overflow-y:auto}
+  .screen.active{display:flex}
+
+  /* ---------- Avatar (de lein-identidad-cerebro.html) ---------- */
+  .stage{position:relative;width:200px;height:200px;display:grid;place-items:center}
+  .ring{position:absolute;border-radius:50%;border:2px solid rgba(255,140,66,.4);
+    width:170px;height:170px;opacity:0}
+  .listening .ring{animation:pin 1.6s ease-out infinite}
+  .listening .ring:nth-child(2){animation-delay:.5s}
+  .listening .ring:nth-child(3){animation-delay:1s}
+  @keyframes pin{0%{transform:scale(1.5);opacity:0}40%{opacity:.6}100%{transform:scale(.85);opacity:0}}
+  .talking .ring{animation:pout 1.1s ease-out infinite}
+  .talking .ring:nth-child(2){animation-delay:.36s}
+  .talking .ring:nth-child(3){animation-delay:.72s}
+  @keyframes pout{0%{transform:scale(.85);opacity:.7}100%{transform:scale(1.7);opacity:0}}
+  .mark{position:relative;width:128px;height:128px;animation:breathe 4s ease-in-out infinite}
+  @keyframes breathe{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-6px) scale(1.015)}}
+  .listening .mark{animation:breathe 2.4s ease-in-out infinite}
+  .talking .mark{animation:talk .5s ease-in-out infinite}
+  @keyframes talk{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+  .mark svg{width:100%;height:100%;filter:drop-shadow(0 2px 6px rgba(0,0,0,.45))}
+  /* Neuronas del cerebro: apagadas por defecto, se encienden con la práctica */
+  .neuron{fill:#5e3a22;opacity:.5;transition:fill .6s ease, opacity .6s ease}
+  .neuron.lit{fill:#FFE6A6;opacity:1}
+  .chatAvatar.celebrate .mark{animation:brainPop .65s ease}
+  @keyframes brainPop{0%,100%{transform:scale(1)}40%{transform:scale(1.13)}}
+  /* Aviso flotante de logro */
+  .toast{position:fixed;left:50%;top:74px;transform:translateX(-50%) translateY(-12px);
+    background:rgba(255,140,66,.95);color:#1a120a;font-family:'Sora',sans-serif;font-weight:600;
+    font-size:16px;padding:11px 20px;border-radius:999px;box-shadow:0 6px 16px rgba(0,0,0,.35);
+    opacity:0;pointer-events:none;transition:opacity .3s, transform .3s;z-index:60}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .eq{position:absolute;bottom:-2px;display:flex;gap:4px;height:20px;align-items:flex-end;opacity:0;transition:opacity .25s}
+  .talking .eq{opacity:1}
+  .eq i{width:4px;background:linear-gradient(var(--yellow),var(--deep));border-radius:3px;height:6px}
+  .talking .eq i{animation:bar .6s ease-in-out infinite}
+  .eq i:nth-child(2){animation-delay:.12s}.eq i:nth-child(3){animation-delay:.24s}
+  .eq i:nth-child(4){animation-delay:.36s}.eq i:nth-child(5){animation-delay:.18s}
+  @keyframes bar{0%,100%{height:6px}50%{height:18px}}
+
+  /* ---------- Marca ---------- */
+  .name h1{font-family:'Sora',sans-serif;font-weight:700;font-size:46px;letter-spacing:-1px;color:#FFB05A;line-height:1.1}
+  .name p{margin-top:9px;font-size:14px;letter-spacing:3px;text-transform:uppercase;color:#9a8a7a;font-weight:500}
+  .lead{max-width:420px;color:#cdbfb0;font-size:21px;line-height:1.55}
+  .hero-title{font-family:'Sora',sans-serif;font-weight:700;font-size:36px;line-height:1.15;letter-spacing:-1px}
+  /* Barra de progreso del cerebro (se va llenando con la práctica) */
+  .brainbar-wrap{display:flex;flex-direction:column;align-items:center;gap:7px}
+  .brainbar-label{font-size:12px;letter-spacing:2.5px;text-transform:uppercase;color:#9a8a7a;font-weight:600}
+  .brainbar{width:230px;max-width:70vw;height:14px;border-radius:999px;background:rgba(255,255,255,.08);
+    border:1px solid rgba(255,140,66,.3);overflow:hidden}
+  .brainbar-fill{height:100%;width:0%;border-radius:999px;
+    background:linear-gradient(90deg,var(--yellow),var(--orange),var(--deep));
+    transition:width .7s cubic-bezier(.2,.7,.3,1)}
+  /* avatar de inicio siempre "vivo" con anillos suaves */
+  /* Entrada en cascada del inicio (cae y se asienta) */
+  @keyframes dropIn{0%{opacity:0;transform:translateY(-26px) scale(.94)}
+                    70%{opacity:1;transform:translateY(4px) scale(1.01)}
+                    100%{opacity:1;transform:translateY(0) scale(1)}}
+  /* El título cae palabra por palabra (con rebote divertido) */
+  .hero-title .w{display:inline-block;opacity:0;transform:translateY(-46px) rotate(-7deg);
+    color:#f6eee6}
+  .hero-title .w.drop{animation:wordDrop .55s cubic-bezier(.2,1.5,.45,1) forwards}
+  @keyframes wordDrop{0%{opacity:0;transform:translateY(-46px) rotate(-7deg)}
+                      65%{opacity:1;transform:translateY(7px) rotate(2deg)}
+                      100%{opacity:1;transform:translateY(0) rotate(0)}}
+  /* El resto entra después de que cae el título */
+  /* Entrada rápida: el botón está listo en menos de 1 segundo */
+  #welcome.active .stage{animation:dropIn .5s ease .15s backwards}
+  #welcome.active .name{animation:dropIn .4s ease .3s backwards}
+  #welcome.active #brainWrap{animation:dropIn .4s ease .4s backwards}
+  #welcome.active #startBtn{animation:dropIn .4s ease .5s backwards}
+  #welcome.active #welcomeMore{animation:dropIn .4s ease .6s backwards}
+  /* Cerebro Lein grande al centro */
+  .stage.hero.big{width:300px;height:300px}
+  .stage.hero.big .mark{width:218px;height:218px}
+  .stage.hero.big .ring{width:252px;height:252px}
+  /* Cerebro en la pantalla de niveles (con glow y anillos, como los demás) */
+  .stage.hero.levelhero{width:150px;height:150px;position:relative}
+  .stage.hero.levelhero .mark{width:112px;height:112px;position:relative;z-index:2}
+  .stage.hero.levelhero .mark svg{filter:drop-shadow(0 2px 4px rgba(0,0,0,.5))}
+  .stage.hero.levelhero .ring{width:132px;height:132px}
+
+  /* ---------- Botones ---------- */
+  .go{border:none;cursor:pointer;font-family:'Sora',sans-serif;font-weight:600;font-size:23px;
+    color:#1a120a;background:linear-gradient(120deg,var(--yellow),var(--orange));
+    padding:20px 38px;white-space:nowrap;border-radius:999px;box-shadow:0 6px 16px rgba(0,0,0,.3);transition:transform .15s}
+  .go:active{transform:scale(.95)}
+  .levels{display:grid;grid-template-columns:1fr 1fr;gap:14px;width:100%;max-width:480px;perspective:1000px}
+  .levels button{display:flex;align-items:center;justify-content:center;text-align:center;
+    min-height:150px;font-family:'Sora',sans-serif;font-weight:600;font-size:22px;line-height:1.25;
+    cursor:pointer;color:#f3ece4;padding:18px 14px;border-radius:22px;
+    background:linear-gradient(160deg, rgba(255,140,66,.14), rgba(255,255,255,.03));
+    border:2px solid rgba(255,160,80,.55);box-shadow:0 8px 22px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.06);
+    transition:transform .18s ease, background .18s, box-shadow .18s, border-color .18s}
+  .levels button:hover{transform:translateY(-6px) scale(1.04);
+    background:linear-gradient(160deg, rgba(255,140,66,.30), rgba(255,140,66,.10));
+    border-color:#FFB05A;box-shadow:0 10px 24px rgba(0,0,0,.35)}
+  .levels button:active{transform:scale(.97)}
+  .levels button.full{grid-column:1/-1;min-height:74px;font-size:18px;
+    background:linear-gradient(160deg, rgba(255,140,66,.20), rgba(255,140,66,.06));padding:18px}
+  /* Botón volver (esquina superior izquierda) */
+  .screenBack{position:fixed;top:18px;left:18px;width:46px;height:46px;border-radius:50%;
+    border:1px solid rgba(255,140,66,.35);background:rgba(255,255,255,.07);color:#f3ece4;font-size:24px;
+    cursor:pointer;display:grid;place-items:center;z-index:6}
+  .screenBack:active{transform:scale(.92)}
+  /* Entrada 3D escalonada de las tarjetas (cada vez que se muestra la pantalla) */
+  @keyframes cardIn{from{opacity:0;transform:translateY(30px) rotateX(-45deg) scale(.95)}
+                    to{opacity:1;transform:translateY(0) rotateX(0) scale(1)}}
+  #levelScreen.active .levels button{animation:cardIn .55s cubic-bezier(.2,.75,.3,1) backwards}
+  #levelScreen.active .levels button:nth-child(1){animation-delay:.06s}
+  #levelScreen.active .levels button:nth-child(2){animation-delay:.13s}
+  #levelScreen.active .levels button:nth-child(3){animation-delay:.20s}
+  #levelScreen.active .levels button:nth-child(4){animation-delay:.27s}
+  #levelScreen.active .levels button:nth-child(5){animation-delay:.34s}
+  #levelScreen.active .levels button:nth-child(6){animation-delay:.41s}
+  #levelScreen.active .levels button:nth-child(7){animation-delay:.50s}
+  .link{background:none;border:none;color:#9a8a7a;font-size:14px;text-decoration:underline;cursor:pointer;font-family:inherit}
+  /* Selector de voz */
+  .voicepick{display:none;flex-direction:column;gap:11px;align-items:center;margin-top:8px}
+  .voicepick.show{display:flex}
+  .vp-label{font-size:16px;color:#b8a795}
+  .vp-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;max-width:440px}
+  .vp-row button{font-family:inherit;font-size:18px;cursor:pointer;background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,140,66,.3);color:#f3ece4;padding:12px 20px;border-radius:999px;transition:.12s}
+  .vp-row button.sel{background:var(--orange);border-color:var(--orange);color:#1a120a;font-weight:600}
+  .vp-row button:active{transform:scale(.95)}
+  .vp-row button.loading{opacity:.55}
+  @keyframes vppulse{0%,100%{opacity:.55}50%{opacity:.85}}
+  .vp-row button.loading{animation:vppulse .7s ease-in-out infinite}
+
+  /* ---------- Chat ---------- */
+  #chat{display:none;flex-direction:column;position:fixed;top:0;left:0;right:0;margin:0 auto;z-index:5;height:100vh;height:100dvh;height:var(--app-h,100dvh);max-width:720px;width:100%;overflow:hidden}
+  #chat.active{display:flex}
+  .topbar{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.07)}
+  .topbar .mini{width:44px;height:44px;flex:0 0 44px}
+  .topbar .who{font-family:'Sora',sans-serif;font-weight:600;font-size:23px;line-height:1}
+  .topbar .lvl{font-size:14px;color:#9a8a7a;margin-top:4px}
+  .timepill{margin-left:auto;font-size:15px;color:#9a8a7a;font-variant-numeric:tabular-nums;padding:6px 4px;
+    white-space:nowrap;transition:opacity .3s}
+  .timepill.paused{opacity:.45}
+  .textpill{flex:0 0 auto;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;color:#cdbfb0;
+    background:transparent;border:1px solid rgba(255,255,255,.18);padding:8px 12px;border-radius:999px;white-space:nowrap}
+  .textpill[aria-pressed="true"]{color:#1a120a;background:#FFB05A;border-color:#FFB05A}
+  .topbar .iconbtn{width:40px;height:40px;flex:0 0 40px;font-size:17px}
+  .meterpill{margin-left:8px;font-size:14px;color:#8fe39a;background:rgba(80,200,120,.10);
+    border:1px solid rgba(80,200,120,.30);padding:7px 11px;border-radius:999px;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .feed{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:22px 18px;display:flex;flex-direction:column;gap:18px}
+  .bubble{max-width:88%;padding:13px 17px;border-radius:20px;font-size:21px;line-height:1.45;word-wrap:break-word}
+  .bubble.voiceonly{cursor:pointer;color:#b8a795;font-size:17px;padding:11px 16px;background:rgba(255,255,255,.04)}
+  .undo{align-self:flex-end;margin-top:-12px;background:none;border:none;color:#9a8a7a;font-family:inherit;
+    font-size:14px;cursor:pointer;padding:4px 2px;text-decoration:underline;text-underline-offset:3px}
+  .lein{align-self:flex-start;background:rgba(255,255,255,.07);border:1px solid rgba(255,140,66,.18);border-bottom-left-radius:6px}
+  .me{align-self:flex-end;background:linear-gradient(120deg,var(--orange),var(--deep));color:#1a120a;border-bottom-right-radius:6px;font-weight:500}
+  .bubble.listen{color:#b8a795;font-style:italic;background:rgba(255,255,255,.04);border-style:dashed}
+  .hint{align-self:flex-start;max-width:88%;font-size:17px;color:#ffd9a8;background:rgba(255,140,66,.08);
+    border-left:3px solid rgba(255,140,66,.6);padding:9px 14px;border-radius:4px 12px 12px 4px;line-height:1.45}
+  #feed.voiceonly .hint{display:none}
+  /* Corrección suave (nota visible, color distinto a la pista) */
+  .correction{align-self:flex-start;max-width:88%;font-size:17px;color:#d8ecfb;background:rgba(90,160,220,.09);
+    border-left:3px solid #7fb6e6;padding:9px 14px;border-radius:4px 12px 12px 4px;line-height:1.45}
+  .ideas-label{align-self:flex-start;font-size:14px;color:#9a8a7a;margin-bottom:-8px}
+  .row-actions{align-self:flex-start;display:flex;gap:10px;flex-wrap:wrap;margin-top:-4px}
+  .chip{cursor:pointer;font-size:17px;font-family:inherit;color:#f3ece4;background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,140,66,.3);padding:11px 16px;border-radius:999px;transition:.12s}
+  .chip:active{transform:scale(.95);background:rgba(255,140,66,.2)}
+  .speakbtn{cursor:pointer;background:rgba(255,255,255,.06);border:1px solid rgba(255,140,66,.25);
+    color:#cdbfb0;border-radius:999px;padding:9px 15px;font-size:16px;align-self:flex-start}
+  .typing{align-self:flex-start;display:flex;gap:6px;padding:16px 18px;border-radius:18px;background:rgba(255,255,255,.06)}
+  .typing i{width:8px;height:8px;border-radius:50%;background:#9a8a7a;animation:dot 1.2s ease-in-out infinite}
+  .typing i:nth-child(2){animation-delay:.15s}
+  .typing i:nth-child(3){animation-delay:.3s}
+  @keyframes dot{0%,60%,100%{opacity:.35;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
+  /* Botón de atrás */
+  .backbtn{flex:0 0 auto;width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,140,66,.3);
+    background:rgba(255,255,255,.06);color:#f3ece4;font-size:24px;cursor:pointer;display:grid;
+    place-items:center;line-height:1;padding:0}
+  .backbtn:active{transform:scale(.92)}
+  /* Lein animado dentro del chat (reposo / escuchando / hablando) */
+  .chatAvatar{width:100%;height:170px;flex:0 0 auto;display:grid;place-items:center;position:relative;
+    border-bottom:1px solid rgba(255,255,255,.05)}
+  /* Halo SOLO en el borde (centro transparente) para no tapar al cerebrito */
+  .chatAvatar .mark{width:118px;height:118px;position:relative;z-index:2}
+  /* Borde oscuro + brillo: separa al cerebrito del fondo y lo hace nítido */
+  .chatAvatar .mark svg{filter:drop-shadow(0 2px 4px rgba(0,0,0,.5))}
+  .chatAvatar .ring{width:146px;height:146px;border-width:1px;border-color:rgba(255,160,80,.35);z-index:1}
+  .chatAvatar .eq{bottom:20px;z-index:3}
+  /* En pantallas bajas (celulares), achicar el avatar del chat para que la barra del micrófono siempre se vea */
+  @media (max-height:720px){
+    .chatAvatar{height:120px}
+    .chatAvatar .mark{width:84px;height:84px}
+    .chatAvatar .ring{width:104px;height:104px}
+    .chatAvatar::before{width:150px;height:150px}
+  }
+  .composer{display:flex;gap:10px;padding:14px 16px;padding-bottom:calc(14px + env(safe-area-inset-bottom));border-top:1px solid rgba(255,255,255,.07);align-items:center;flex:0 0 auto}
+  .composer input{flex:1;min-width:0;background:rgba(255,255,255,.07);border:1px solid rgba(255,140,66,.25);
+    color:#f3ece4;font-size:18px;font-family:inherit;padding:16px 20px;border-radius:999px;outline:none}
+  .composer #sendBtn{background:rgba(255,255,255,.1);color:#f3ece4;width:52px;height:52px;font-size:20px}
+  .composer #sendBtn.hide{display:none}
+  .composer input::placeholder{color:#8a7c6e}
+  .composer button{flex:0 0 auto;border:none;cursor:pointer;background:linear-gradient(120deg,var(--yellow),var(--orange));
+    color:#1a120a;font-size:24px;width:62px;height:62px;border-radius:50%;display:grid;place-items:center}
+  .composer button:disabled{opacity:.4}
+  /* Botón de micrófono */
+  .micbtn{flex:0 0 auto;cursor:pointer;width:62px;height:62px;border-radius:50%;font-size:26px;
+    display:grid;place-items:center;background:rgba(255,255,255,.08);border:2px solid rgba(255,140,66,.55);
+    color:#f3ece4;transition:transform .12s, background .15s}
+  .micbtn:active{transform:scale(.94)}
+  .micbtn.recording{background:linear-gradient(120deg,#ff5a5a,#e5631c);border-color:#ff8a5a;color:#fff;
+    animation:micpulse 1s ease-in-out infinite}
+  @keyframes micpulse{0%,100%{box-shadow:0 0 0 0 rgba(255,90,90,.55)}50%{box-shadow:0 0 0 14px rgba(255,90,90,0)}}
+  .micbtn.busy{opacity:.55}
+  .micstatus{display:none;text-align:center;font-size:15.5px;color:#cdbfb0;padding:8px 16px 0}
+  .micstatus.show{display:block}
+  .micstatus .actbtn{margin-left:8px;background:var(--orange);color:#1a120a;border:none;border-radius:999px;
+    padding:7px 14px;font-weight:600;cursor:pointer;font-family:inherit;font-size:14px}
+  .blocked{position:fixed;inset:0;background:var(--bg);display:none;flex-direction:column;
+    align-items:center;justify-content:safe center;gap:18px;padding:28px 18px;text-align:center;z-index:50;overflow-y:auto}
+  .blocked.active{display:flex}
+
+  /* ---------- Nuevos: entrada, tema, corrección, cierre ---------- */
+  .topbar{gap:8px;padding:12px 14px}
+  .topbar .whobox{min-width:0;flex:1 1 auto}
+  .topbar .lvl{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* Estado grande bajo Lein: pensando / hablando / tu turno */
+  .chatAvatar{height:196px}
+  .chatAvatar .eq{bottom:44px}
+  .leinstatus{position:absolute;left:12px;right:12px;bottom:10px;text-align:center;font-family:'Sora',sans-serif;
+    font-size:20px;font-weight:600;color:#f3ece4;z-index:3;min-height:26px;line-height:1.3}
+  .leinstatus.wait{color:#FFC83D}
+  @media (max-height:720px){
+    .chatAvatar{height:150px}
+    .chatAvatar .eq{display:none}
+    .leinstatus{font-size:18px;bottom:4px}
+  }
+  /* "Tu turno": el micrófono crece suave y lanza una onda, para que sepan que deben tocarlo */
+  .micbtn{position:relative}
+  .micbtn.yourturn{animation:micnudge 1.6s ease-in-out infinite}
+  .micbtn.yourturn::after{content:"";position:absolute;inset:-5px;border-radius:50%;border:3px solid #FFB05A;
+    animation:micring 1.6s ease-out infinite;pointer-events:none}
+  .micbtn.yourturn.tip::before{content:"Tócalo y habla";position:absolute;bottom:calc(100% + 14px);right:-2px;
+    white-space:nowrap;background:#FFB05A;color:#1a120a;font-family:'DM Sans',sans-serif;font-size:16px;font-weight:600;
+    padding:8px 14px;border-radius:14px 14px 4px 14px;box-shadow:0 4px 12px rgba(0,0,0,.35);pointer-events:none}
+  @keyframes micnudge{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+  @keyframes micring{0%{transform:scale(1);opacity:.9}100%{transform:scale(1.7);opacity:0}}
+  @media (prefers-reduced-motion: reduce){ .micbtn.yourturn,.micbtn.yourturn::after{animation:none} }
+  .typing{align-items:center}
+  .typing span{margin-left:6px;font-size:18px;color:#cdbfb0}
+  .welcome-more{display:none;flex-direction:column;align-items:center;gap:12px}
+  .ghostbtn{font-family:'Sora',sans-serif;font-weight:600;font-size:19px;color:#f3ece4;background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,140,66,.45);padding:15px 30px;border-radius:999px;cursor:pointer}
+  .ghostbtn:active{transform:scale(.96)}
+  .modecard{align-self:stretch;display:flex;flex-direction:column;gap:12px}
+  .mc-title{font-family:'Sora',sans-serif;font-size:21px;font-weight:600;text-align:center;margin-bottom:2px}
+  .modebtn{display:flex;align-items:center;justify-content:center;gap:10px;padding:22px 20px;border-radius:18px;cursor:pointer;
+    border:1px solid rgba(255,140,66,.35);background:rgba(255,255,255,.05);color:#f3ece4;font-family:inherit}
+  .modebtn b{font-size:22px;font-weight:600}
+  .modebtn span{font-size:16px;color:#b8a795}
+  .modebtn.primary{background:rgba(255,140,66,.16);border-color:#FF8C42}
+  .modebtn:active{transform:scale(.98)}
+  .note{align-self:stretch;font-size:19px;line-height:1.45;color:#f3ece4;background:rgba(255,255,255,.05);
+    border:1px solid rgba(255,140,66,.3);padding:14px 18px;border-radius:14px}
+  .note .link{display:inline-block;margin-top:8px;font-size:15px}
+  .topicchip{align-self:center;font-size:15px;color:#ffd9a8;background:rgba(255,140,66,.12);
+    border:1px solid rgba(255,140,66,.3);padding:6px 14px;border-radius:999px;max-width:90%}
+  .correction .ct{font-weight:600}
+  .correction .said{color:#d6c7b8}
+  .correction .better{color:#fff;font-weight:600}
+  .minispeak{margin-left:8px;border:1px solid rgba(130,185,235,.5);background:rgba(90,160,220,.18);color:#e6f4ff;
+    border-radius:999px;padding:5px 12px;font-size:15px;cursor:pointer;font-family:inherit;vertical-align:middle}
+  .retrybtn{align-self:flex-start;cursor:pointer;font-family:inherit;font-size:18px;color:#1a120a;background:#FFB05A;
+    border:none;border-radius:14px;padding:13px 18px;text-align:left}
+  .voicesheet{display:none;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center;padding:10px 14px;
+    border-bottom:1px solid rgba(255,255,255,.07)}
+  .voicesheet.show{display:flex}
+  .voicesheet .vs-label{width:100%;text-align:center;font-size:15px;color:#b8a795}
+  .voicesheet button{font-family:inherit;font-size:16px;cursor:pointer;background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,140,66,.3);color:#f3ece4;padding:9px 16px;border-radius:999px}
+  .voicesheet button.sel{background:var(--orange);border-color:var(--orange);color:#1a120a;font-weight:600}
+  .voicesheet button.loading{opacity:.55}
+  .sumcard{width:100%;max-width:460px;display:flex;flex-direction:column;align-items:center;gap:16px}
+  .sum-title{font-family:'Sora',sans-serif;font-size:27px;font-weight:700}
+  .sum-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%}
+  .sum-stat{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:14px 8px}
+  .sum-stat .n{font-family:'Sora',sans-serif;font-size:30px;font-weight:700;color:#FFC83D}
+  .sum-stat .k{font-size:14px;color:#b8a795;margin-top:4px;line-height:1.3}
+  .sum-sub{align-self:flex-start;font-size:15px;color:#9a8a7a;text-transform:uppercase;letter-spacing:1.5px}
+  .fixlist{list-style:none;width:100%;display:flex;flex-direction:column;gap:8px;text-align:left}
+  .fixlist li{background:rgba(80,200,120,.10);border:1px solid rgba(80,200,120,.35);border-radius:12px;padding:11px 14px}
+  .fixlist .ok{color:#8fe39a;font-weight:600;font-size:18px}
+  .fixlist .was{display:block;color:#9a8a7a;font-size:14px;margin-top:2px}
+  .fixlist li.none{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.1);color:#cdbfb0}
+</style>
+</head>
+<body>
+
+  <!-- ====== Avatar SVG reutilizable (se clona) ====== -->
+  <template id="avatarTpl">
+    <svg viewBox="0 0 200 200" aria-label="Lein">
+      <defs>
+        <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#FFE59A"/><stop offset="0.55" stop-color="#FFA24E"/><stop offset="1" stop-color="#F0731C"/>
+        </linearGradient>
+      </defs>
+      <g fill="url(#g)">
+        <ellipse cx="100" cy="108" rx="64" ry="52"/>
+        <circle cx="64" cy="78" r="26"/><circle cx="100" cy="68" r="28"/>
+        <circle cx="136" cy="78" r="26"/><circle cx="50" cy="104" r="22"/>
+        <circle cx="150" cy="104" r="22"/><circle cx="74" cy="62" r="20"/>
+        <circle cx="126" cy="62" r="20"/>
+        <path d="M92 150 q8 18 16 0 z"/>
+      </g>
+      <g fill="none" stroke="#9c3d12" stroke-width="3" stroke-linecap="round" opacity="0.45">
+        <path d="M100 60 Q100 100 100 150"/><path d="M100 84 Q78 90 70 108"/>
+        <path d="M100 84 Q122 90 130 108"/><path d="M100 112 Q84 118 80 134"/>
+        <path d="M100 112 Q116 118 120 134"/><path d="M86 74 Q72 80 66 92"/>
+        <path d="M114 74 Q128 80 134 92"/>
+      </g>
+      <!-- Neuronas: se encienden con la práctica (el cerebro "despierta") -->
+      <g class="neurons">
+        <circle class="neuron" data-i="0" cx="64"  cy="80"  r="5.5"/>
+        <circle class="neuron" data-i="1" cx="100" cy="68"  r="5.5"/>
+        <circle class="neuron" data-i="2" cx="136" cy="80"  r="5.5"/>
+        <circle class="neuron" data-i="3" cx="52"  cy="104" r="5"/>
+        <circle class="neuron" data-i="4" cx="148" cy="104" r="5"/>
+        <circle class="neuron" data-i="5" cx="78"  cy="62"  r="5"/>
+        <circle class="neuron" data-i="6" cx="122" cy="62"  r="5"/>
+        <circle class="neuron" data-i="7" cx="80"  cy="120" r="5"/>
+        <circle class="neuron" data-i="8" cx="120" cy="120" r="5"/>
+        <circle class="neuron" data-i="9" cx="100" cy="108" r="5.5"/>
+      </g>
+    </svg>
+  </template>
+
+  <!-- ====== Pantalla 1: Bienvenida ====== -->
+  <section class="screen active" id="welcome">
+    <h2 class="hero-title" id="heroTitle"><span class="w">Tu</span> <span class="w">cerebro</span> <span class="w">y</span> <span class="w">boca</span><br><span class="w">hablan</span> <span class="w">aquí</span></h2>
+    <div class="stage hero big" id="stageWelcome">
+      <div class="ring"></div><div class="ring"></div><div class="ring"></div>
+      <div class="mark"></div>
+      <div class="eq"><i></i><i></i><i></i><i></i><i></i></div>
+    </div>
+    <div class="name"><h1 style="font-size:30px">I'm Lein</h1></div>
+    <div class="brainbar-wrap" id="brainWrap" style="display:none">
+      <div class="brainbar-label">Tu cerebro</div>
+      <div class="brainbar"><div class="brainbar-fill" id="brainFill"></div></div>
+    </div>
+    <button class="go" id="startBtn">▶ ¡Empezar!</button>
+    <div class="welcome-more" id="welcomeMore">
+      <button class="ghostbtn" id="topicBtnWelcome">🎯 Tengo un tema</button>
+      <button class="link" id="changeLevelBtn">Cambiar nivel</button>
+    </div>
+    <p class="lead" style="font-size:14px;color:#8a7c6e" id="browserWarn"></p>
+  </section>
+
+  <!-- ====== Pantalla 2: Elegir nivel ====== -->
+  <section class="screen" id="levelScreen">
+    <button class="screenBack" id="levelBack" title="Volver al inicio" aria-label="Volver al inicio">←</button>
+    <div class="stage hero levelhero" id="stageLevel">
+      <div class="ring"></div><div class="ring"></div><div class="ring"></div>
+      <div class="mark"></div>
+    </div>
+    <div class="name"><h1 style="font-size:33px">¡Empecemos a practicar!</h1></div>
+    <p class="lead">Elige tu nivel 👇 o deja que Lein lo descubra.</p>
+    <div class="levels" id="levelButtons">
+      <button data-l="A1">Estoy empezando</button>
+      <button data-l="A1+">Estoy empezando +</button>
+      <button data-l="A2">Ya sé un poco</button>
+      <button data-l="B1">Ya sé un poco +</button>
+      <button data-l="B2">Ya me defiendo</button>
+      <button data-l="C1">Como todo un experto</button>
+      <button class="full" data-l="__placement__">No sé mi nivel — que Lein me ubique</button>
+    </div>
+  </section>
+
+  <!-- ====== Pantalla 3: Chat ====== -->
+  <section id="chat">
+    <div class="topbar">
+      <button class="backbtn" id="backBtn" title="Atrás" aria-label="Atrás">←</button>
+      <div class="whobox">
+        <div class="who">Lein</div>
+        <div class="lvl" id="levelLabel">A1</div>
+      </div>
+      <div class="timepill" id="timePill" title="Tu tiempo de práctica de hoy. Se pausa cuando no estás practicando.">10:00</div>
+      <button id="textBtn" class="textpill" aria-pressed="true" title="Mostrar u ocultar el texto de Lein">Texto: Sí</button>
+      <button id="voiceBtn" class="backbtn iconbtn" title="Cambiar la voz de Lein" aria-label="Cambiar la voz de Lein" style="display:none">🔊</button>
+      <div class="meterpill" id="meterPill" title="Costo de esta sesión (solo para el dueño)" style="display:none">💲—</div>
+      <button id="devRecap" class="backbtn" title="Probar repaso (solo pruebas)" style="display:none;width:42px;height:42px;font-size:17px;margin-left:8px">↻</button>
+    </div>
+    <div class="voicesheet" id="voiceSheet">
+      <div class="vs-label">Elige la voz de Lein (tócala para oírla):</div>
+      <button data-voice="shimmer">Shimmer ♀</button>
+      <button data-voice="nova">Nova ♀</button>
+      <button data-voice="coral">Coral ♀</button>
+      <button data-voice="ash">Ash ♂</button>
+      <button data-voice="echo">Echo ♂</button>
+      <button data-voice="onyx">Onyx ♂</button>
+    </div>
+    <div class="chatAvatar stage" id="stageChat">
+      <div class="ring"></div><div class="ring"></div><div class="ring"></div>
+      <div class="mark"></div>
+      <div class="eq"><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="leinstatus" id="leinStatus" aria-live="polite"></div>
+    </div>
+    <div class="feed" id="feed"></div>
+    <div class="micstatus" id="micStatus"></div>
+    <div class="composer">
+      <input id="input" type="text" placeholder="Toca el micro y habla 🎤  (o escribe)" autocomplete="off" autocapitalize="sentences">
+      <button id="micBtn" class="micbtn" title="Hablar">🎤</button>
+      <button id="sendBtn" class="hide" title="Enviar" aria-label="Enviar">➤</button>
+    </div>
+  </section>
+
+  <!-- Aviso flotante (logros del cerebro) -->
+  <div class="toast" id="toast"></div>
+
+  <!-- ====== Cierre: resumen del día (al llegar al tope) ====== -->
+  <div class="blocked" id="blockedOverlay">
+    <div class="sumcard">
+      <div class="stage" style="width:130px;height:130px"><div class="mark" style="width:110px;height:110px"></div></div>
+      <h2 class="sum-title" id="sumTitle">¡Buen trabajo hoy!</h2>
+      <div class="sum-stats">
+        <div class="sum-stat"><div class="n" id="sumPhrases">0</div><div class="k">frases que dijiste hoy</div></div>
+        <div class="sum-stat"><div class="n" id="sumFixes">0</div><div class="k">correcciones aprendidas</div></div>
+        <div class="sum-stat"><div class="n" id="sumDays">1</div><div class="k">días seguidos practicando</div></div>
+      </div>
+      <div class="sum-sub">Lo que aprendiste hoy</div>
+      <ul class="fixlist" id="sumList"></ul>
+      <p class="lead" id="blockedMsg">Tu práctica de hoy terminó. ¡Nos vemos mañana! 👋</p>
+    </div>
+  </div>
+
+<script>
+  // ---------- Configuración ----------
+  // El backend sirve este archivo, así que la API está en el MISMO origen.
+  const API = "";
+  const params = new URLSearchParams(location.search);
+  const STUDENT_ID = params.get("studentId") || localStorage.getItem("lein_sid") || ("test-" + Math.random().toString(36).slice(2, 9));
+  localStorage.setItem("lein_sid", STUDENT_ID);
+  const STUDENT_NAME = params.get("name") || "";
+  const URL_LEVEL = params.get("level"); // si Moodle ya manda el nivel
+  const METER = params.get("meter") === "1"; // medidor de costo SOLO para el dueño (?meter=1)
+  // Memoria del nombre por estudiante (en este dispositivo). En producción,
+  // Moodle puede mandar el nombre en la URL (?name=) y manda siempre.
+  const NAME_KEY = "lein_name_" + STUDENT_ID;
+  let knownName = STUDENT_NAME || localStorage.getItem(NAME_KEY) || "";
+  if (knownName) localStorage.setItem(NAME_KEY, knownName);
+  // Nivel recordado (elegido o descubierto en la ubicación): quien vuelve entra con 1 toque.
+  const LEVEL_KEY = "lein_level_" + STUDENT_ID;
+  let savedLevel = URL_LEVEL || localStorage.getItem(LEVEL_KEY) || "";
+  function saveLevel(l){ savedLevel = l; try{ localStorage.setItem(LEVEL_KEY, l); }catch(e){} }
+  // Celulares: el micrófono se suelta después de cada turno (en iPhone, con el
+  // micro abierto la voz de Lein sale bajita por el auricular). En compu se deja
+  // abierto toda la sesión: un solo permiso y arranca a grabar al instante.
+  const IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const MOBILE = IOS || /Android|Mobi/i.test(navigator.userAgent);
+
+  // fetch con tiempo máximo (si el servidor se cuelga, no nos quedamos esperando).
+  function fetchT(url, opts, ms){
+    const ctrl = new AbortController();
+    const to = setTimeout(()=>ctrl.abort(), ms || 20000);
+    return fetch(url, Object.assign({}, opts, { signal: ctrl.signal })).finally(()=>clearTimeout(to));
+  }
+
+  // ---- "Enciende tu cerebro": el cerebrito se enciende con la práctica ----
+  const BRAIN_KEY = "lein_brain_" + STUDENT_ID;
+  let brainPower = Number(localStorage.getItem(BRAIN_KEY) || 0);
+  const NEURONS = 10, PER_NEURON = 3; // ~3 turnos hablados encienden 1 neurona
+  function litCount(){ return Math.max(0, Math.min(NEURONS, Math.floor(brainPower / PER_NEURON))); }
+  function renderBrain(){
+    const lit = litCount();
+    document.querySelectorAll(".neuron").forEach(n=>{
+      n.classList.toggle("lit", Number(n.dataset.i) < lit);
+    });
+    const max = NEURONS * PER_NEURON;
+    const pct = Math.round(Math.min(brainPower, max) / max * 100);
+    const fill = document.getElementById("brainFill");
+    const wrap = document.getElementById("brainWrap");
+    if(fill) fill.style.width = pct + "%";
+    if(wrap) wrap.style.display = "flex";
+  }
+  function showToast(msg){
+    const t = document.getElementById("toast"); if(!t) return;
+    t.textContent = msg; t.classList.add("show");
+    clearTimeout(showToast._t); showToast._t = setTimeout(()=>t.classList.remove("show"), 2200);
+  }
+  function addBrainPower(n){
+    const before = litCount();
+    brainPower += n;
+    localStorage.setItem(BRAIN_KEY, String(brainPower));
+    const after = litCount();
+    renderBrain();
+    if(after > before){ // ¡se encendió una neurona nueva!
+      const st = document.getElementById("stageChat");
+      if(st){ st.classList.add("celebrate"); setTimeout(()=>st.classList.remove("celebrate"), 700); }
+      showToast(after >= NEURONS ? "🧠 ¡Tu cerebro está al máximo! 🎉" : "🧠 ¡Tu cerebro creció!");
+    }
+  }
+
+  // ---- Progreso del día (para la tarjeta de cierre) y días seguidos ----
+  function dayStr(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+  const DAYS_KEY = "lein_days_" + STUDENT_ID;
+  const dayKey = ()=> "lein_day_" + STUDENT_ID + "_" + dayStr(new Date());
+  function loadDay(){
+    try{ const d = JSON.parse(localStorage.getItem(dayKey()) || "null"); if(d && Array.isArray(d.fixes)) return d; }catch(e){}
+    return { phrases:0, fixes:[] };
+  }
+  function saveDay(d){ try{ localStorage.setItem(dayKey(), JSON.stringify(d)); }catch(e){} }
+  function markPracticedToday(){
+    try{
+      const days = JSON.parse(localStorage.getItem(DAYS_KEY) || "[]");
+      const today = dayStr(new Date());
+      if(!days.includes(today)){ days.push(today); localStorage.setItem(DAYS_KEY, JSON.stringify(days.slice(-90))); }
+    }catch(e){}
+  }
+  function streakDays(){
+    let days = [];
+    try{ days = JSON.parse(localStorage.getItem(DAYS_KEY) || "[]"); }catch(e){}
+    const set = new Set(days);
+    const d = new Date();
+    if(!set.has(dayStr(d))) d.setDate(d.getDate()-1); // aún no practica hoy: contar hasta ayer
+    let n = 0;
+    while(set.has(dayStr(d))){ n++; d.setDate(d.getDate()-1); }
+    return n;
+  }
+  function countPhrase(){ const d = loadDay(); d.phrases++; saveDay(d); markPracticedToday(); }
+  function saveFix(fix){
+    const d = loadDay();
+    if(!d.fixes.some(f => (f.better||f.text) === (fix.better||fix.text))) d.fixes.push(fix);
+    saveDay(d);
+  }
+
+  // Velocidad de voz por nivel (del documento de arranque).
+  const VOICE_RATE = { "A1":0.72, "A1+":0.80, "A2":0.88, "B1":0.95, "B2":1.0, "C1":1.0, "PLACEMENT":0.85 };
+
+  // Etiquetas amigables que ve el estudiante (por dentro seguimos usando CEFR).
+  const LEVEL_LABELS = {
+    "A1": "Estoy empezando",
+    "A1+": "Estoy empezando +",
+    "A2": "Ya sé un poco",
+    "B1": "Ya sé un poco +",
+    "B2": "Ya me defiendo",
+    "C1": "Como todo un experto",
+  };
+  const labelFor = (lvl)=> LEVEL_LABELS[lvl] || lvl;
+
+  // ---------- Estado ----------
+  let level = "A1";
+  let placementMode = false;
+  let history = [];      // [{role:'user'|'assistant', content}]
+  let lastSay = "";
+  let busy = false;          // esperando la respuesta de Lein
+  let blocked = false;       // ya se mostró el cierre del día
+  let endPending = false;    // se acabó el tiempo: cerrar cuando termine el turno actual
+  let leinSpeaking = false;
+  let transcribing = false;
+  let convoStarted = false;  // ya empezó la conversación (el reloj solo corre desde aquí)
+  let topic = "";            // tema elegido por el alumno ("🎯 Tengo un tema")
+  let awaitingTopic = false; // el próximo mensaje del alumno es su tema
+  let sessionCorrections = []; // errores de la sesión (para el repaso final)
+  let recapDone = false;       // ya se hizo el repaso final
+  const RECAP_AT_SECONDS_LEFT = 65; // faltando ~1 min, hacer el repaso
+  const PLACEHOLDER = "Toca el micro y habla 🎤  (o escribe)";
+
+  // Interruptor "Texto: Sí / No" (modo solo voz), en todos los niveles. Se recuerda.
+  const TEXT_KEY = "lein_text_" + STUDENT_ID;
+  let textOn = true;
+  function initTextMode(){
+    let saved = null; try{ saved = localStorage.getItem(TEXT_KEY); }catch(e){}
+    textOn = saved !== null ? saved === "1" : !(placementMode || ["B1","B2","C1"].includes(level));
+    applyTextMode();
+  }
+  function applyTextMode(){
+    const b = document.getElementById("textBtn");
+    b.setAttribute("aria-pressed", textOn ? "true" : "false");
+    b.textContent = textOn ? "Texto: Sí" : "Texto: No";
+    feed.classList.toggle("voiceonly", !textOn);
+    feed.querySelectorAll(".bubble.lein").forEach(renderLeinBubble);
+  }
+
+  // ---------- Avatar: clonar SVG en cada .mark ----------
+  const tpl = document.getElementById("avatarTpl");
+  // Cada copia necesita su propio id de degradado: si no, cuando la pantalla que
+  // tiene el primero está oculta, el cerebro de las demás sale sin color.
+  document.querySelectorAll(".mark").forEach((m, i) => {
+    const c = tpl.content.cloneNode(true);
+    const grad = c.querySelector("linearGradient");
+    if (grad) { grad.id = "leinGrad" + i; c.querySelector("g[fill]").setAttribute("fill", `url(#leinGrad${i})`); }
+    m.appendChild(c);
+  });
+
+  function setAvatarState(stageEl, state){
+    if(!stageEl) return;
+    stageEl.classList.remove("listening","talking");
+    if(state==="listening") stageEl.classList.add("listening");
+    if(state==="talking") stageEl.classList.add("talking");
+  }
+  function leinState(state){
+    setAvatarState(document.getElementById("stageWelcome"), state);
+    setAvatarState(document.getElementById("stageChat"), state);
+  }
+
+  // ---------- Voz (speechSynthesis del navegador) ----------
+  let enVoice=null;
+  function pickVoices(){
+    const v = speechSynthesis.getVoices();
+    enVoice = v.find(x=>/en[-_]?US/i.test(x.lang)&&/natural|google|samantha|zoe|aaron|ava/i.test(x.name))
+           || v.find(x=>x.lang&&x.lang.toLowerCase().startsWith('en')) || null;
+  }
+  if (typeof speechSynthesis !== "undefined"){ pickVoices(); speechSynthesis.onvoiceschanged = pickVoices; }
+
+  // Limpia el texto antes de hablarlo: quita emojis (para que no diga
+  // "smiley face") y lo que esté entre paréntesis.
+  function cleanForSpeech(t){
+    return (t||"")
+      .replace(/\bLein\b/gi, "Lane")           // "Lein" se PRONUNCIA "Lane" (=Layn, como "play"); no cambia lo escrito
+      .replace(/\([^)]*\)/g, " ")
+      .replace(/[\p{Extended_Pictographic}‍️]/gu, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+  // --- Voz premium del servidor (igual en iPhone/Android/PC) con respaldo al navegador ---
+  let serverTTS = true;        // se apaga solo si el backend NO tiene voz premium
+  let audioUnlocked = false;
+  let selectedVoice = localStorage.getItem("lein_voice") || "shimmer"; // voz americana por defecto
+  if (selectedVoice === "fable") selectedVoice = "shimmer"; // Fable es británica: ya no se ofrece
+  let speakSeq = 0; // token: solo el audio más reciente suena (evita encimar voces)
+  let welcomeUrl = null; // saludo pre-generado para que suene al instante
+  const leinAudio = new Audio();
+  leinAudio.preload = "auto";
+  const SILENT = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
+  // Un toque del usuario "desbloquea" el audio en móviles (clave en iPhone).
+  function unlockAudio(){
+    if(audioUnlocked) return;
+    audioUnlocked=true;
+    try{ leinAudio.src = SILENT; leinAudio.play().then(()=>{ leinAudio.pause(); }).catch(()=>{}); }catch(e){}
+    try{ unlockBeeps(); }catch(e){}
+  }
+
+  // Voz del navegador (respaldo).
+  function speakBrowser(clean, rate, onend, onStart){
+    try{
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(clean);
+      u.lang = "en-US"; u.rate = rate || VOICE_RATE[level] || 0.85; u.pitch = 1.05;
+      if(enVoice) u.voice = enVoice;
+      leinState("talking");
+      try{ onStart && onStart(); }catch(e){}
+      u.onend = ()=>{ leinState("idle"); if(onend) onend(); };
+      u.onerror = ()=>{ leinState("idle"); if(onend) onend(); };
+      speechSynthesis.speak(u);
+    }catch(e){ leinState("idle"); try{ onStart && onStart(); }catch(_){} if(onend) onend(); }
+  }
+
+  // Reproduce una voz del servidor EN STREAMING (suena mientras se genera).
+  // Si falla, usa la voz del navegador SOLO para este turno (el siguiente vuelve a intentar la premium).
+  function playJob(id, clean, onend, onStart, myToken){
+    let started = false, finished = false;
+    const cleanup = ()=>{ clearTimeout(guard); leinAudio.onplaying = leinAudio.onended = leinAudio.onerror = null; };
+    const done = ()=>{ if(finished) return; finished = true; cleanup(); leinState("idle"); if(onend) onend(); };
+    const fallback = ()=>{
+      if(finished) return;
+      if(started){ done(); return; }
+      finished = true; cleanup();
+      if(myToken !== speakSeq) return;
+      speakBrowser(clean, null, onend, onStart);
+    };
+    try{ speechSynthesis.cancel(); }catch(e){}
+    try{ leinAudio.pause(); }catch(e){}
+    leinAudio.onplaying = ()=>{
+      if(myToken !== speakSeq || started) return;
+      started = true; leinState("talking");
+      try{ onStart && onStart(); }catch(e){}
+    };
+    leinAudio.onended = ()=>{ if(myToken === speakSeq) done(); };
+    leinAudio.onerror = ()=>{ if(myToken === speakSeq) fallback(); };
+    // Si en 12 s no empezó a sonar, pasamos a la voz del navegador.
+    const guard = setTimeout(()=>{ if(!started && myToken === speakSeq){ try{ leinAudio.pause(); }catch(e){} fallback(); } }, 12000);
+    leinAudio.src = API + "/api/tts/stream/" + encodeURIComponent(id);
+    const p = leinAudio.play();
+    if(p && p.catch) p.catch(()=>{ if(myToken === speakSeq && !started) fallback(); });
+  }
+
+  // Habla un audio que el servidor YA empezó a generar (llega con la respuesta de Lein).
+  function speakJob(id, text, onend, onStart){
+    const clean = cleanForSpeech(text);
+    const myToken = ++speakSeq;
+    if(!clean){ try{ onStart && onStart(); }catch(e){} if(onend) onend(); return; }
+    playJob(id, clean, onend, onStart, myToken);
+  }
+
+  // Habla cualquier texto: voz premium del servidor (streaming) o, si no hay, la del navegador.
+  async function speak(text, rate, onend, onStart){
+    const clean = cleanForSpeech(text);
+    if(!clean){ try{ onStart && onStart(); }catch(e){} if(onend) onend(); return; }
+    const myToken = ++speakSeq;                 // marca este turno de voz
+    try{ leinAudio.pause(); }catch(e){}          // corta lo que estuviera sonando
+    try{ speechSynthesis.cancel(); }catch(e){}
+    if(serverTTS){
+      try{
+        const res = await fetchT(API + "/api/tts/start", {
+          method:"POST", headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({ text: clean, level, voice: selectedVoice, studentId: STUDENT_ID })
+        }, 8000);
+        const d = await res.json();
+        if(myToken !== speakSeq) return;         // llegó una voz más nueva: descartar esta
+        if(d.id){ playJob(d.id, clean, onend, onStart, myToken); return; }
+        if(d.error === "no_tts") serverTTS = false; // backend sin voz premium
+      }catch(e){ /* red: esta vez usamos la del navegador */ }
+    }
+    if(myToken !== speakSeq) return; // ya hay una voz más nueva en camino
+    speakBrowser(clean, rate, onend, onStart);
+  }
+
+  // Pre-genera el saludo de bienvenida (para que suene al instante al elegir nivel).
+  async function precacheWelcome(){
+    try{
+      const res = await fetch(API + "/api/tts", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ text:"Welcome to your speaking practice! I'm Lane.", level:"A2", voice:selectedVoice })
+      });
+      if(res.ok && (res.headers.get("content-type")||"").includes("audio")){
+        welcomeUrl = URL.createObjectURL(await res.blob());
+      }
+    }catch(e){}
+  }
+  function playWelcome(){
+    if(welcomeUrl){
+      try{ speechSynthesis.cancel(); }catch(e){}
+      const myToken=++speakSeq;
+      leinAudio.onplaying=null;
+      leinAudio.src=welcomeUrl; leinAudio.currentTime=0;
+      leinState("talking");
+      leinAudio.onended=()=>{ leinState("idle"); };
+      leinAudio.onerror=()=>{ leinState("idle"); };
+      leinAudio.play().catch(()=>{ if(myToken===speakSeq) speak("Welcome to your speaking practice! I'm Lein."); });
+    } else {
+      speak("Welcome to your speaking practice! I'm Lein.");
+    }
+  }
+  function stopAllVoices(){
+    try { speechSynthesis.cancel(); } catch(e){}
+    try { leinAudio.pause(); } catch(e){}
+    speakSeq++; // invalida cualquier voz que venga en camino
+    leinSpeaking = false;
+    leinState("idle");
+    // Si cortamos a Lein a media frase, su burbuja deja de decir "está hablando".
+    document.querySelectorAll(".bubble.lein[data-speaking]").forEach(b=>{ delete b.dataset.speaking; renderLeinBubble(b); });
+  }
+
+  // ---------- Pantallas ----------
+  function show(id){
+    document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+    document.getElementById("chat").classList.remove("active");
+    document.getElementById(id).classList.add("active");
+  }
+  const inChat = ()=> document.getElementById("chat").classList.contains("active");
+
+  // ---------- Aviso de navegador ----------
+  if (typeof speechSynthesis === "undefined" && !window.Audio) {
+    document.getElementById("browserWarn").textContent = "Tip: para oír a Lein, ábreme en Safari o Chrome.";
+  }
+
+  // ---------- Bienvenida: nuevo alumno vs. alumno que vuelve ----------
+  function setupWelcome(){
+    const sb = document.getElementById("startBtn");
+    const more = document.getElementById("welcomeMore");
+    if (savedLevel && LEVEL_LABELS[savedLevel]) {
+      sb.textContent = "▶ Seguir practicando";
+      more.style.display = "flex";
+      document.getElementById("changeLevelBtn").textContent = "Cambiar nivel (" + labelFor(savedLevel) + ")";
+    } else {
+      sb.textContent = "▶ ¡Empezar!";
+      more.style.display = "none";
+    }
+  }
+  document.getElementById("startBtn").onclick = ()=>{
+    unlockAudio(); // el toque desbloquea el audio en móviles
+    if (savedLevel && LEVEL_LABELS[savedLevel]) {
+      startChat(savedLevel, "free"); // 1 toque: directo a conversar
+    } else {
+      show("levelScreen");
+      playWelcome();
+    }
+  };
+  document.getElementById("topicBtnWelcome").onclick = ()=>{
+    unlockAudio();
+    if (savedLevel && LEVEL_LABELS[savedLevel]) startChat(savedLevel, "topic");
+    else show("levelScreen");
+  };
+  document.getElementById("changeLevelBtn").onclick = ()=>{
+    unlockAudio();
+    show("levelScreen");
+  };
+
+  // ---------- Elegir nivel ----------
+  document.getElementById("levelButtons").addEventListener("click", (e)=>{
+    const btn = e.target.closest("button"); if(!btn) return;
+    const l = btn.dataset.l;
+    if (l === "__placement__") startPlacement();
+    else { saveLevel(l); startChat(l, "ask"); }
+  });
+
+  // ---------- Iniciar chat normal ----------
+  // mode: "free" (práctica libre ya), "topic" (pedir el tema), "ask" (mostrar las 2 opciones)
+  let returningUser = false;
+  async function startChat(lvl, mode){
+    level = lvl; placementMode = false;
+    returningUser = (mode !== "ask"); // entró por "Seguir practicando" / tema desde el inicio
+    document.getElementById("levelLabel").textContent = labelFor(lvl);
+    resetChat();
+    initTextMode();
+    show("chat");
+    if(METER){ const p=document.getElementById("meterPill"); if(p){ p.style.display="inline-block"; p.textContent="💲0.0000"; } }
+    primeMic();          // pide el permiso del micrófono YA (no en el primer toque)
+    startTimeTracking();
+    await refreshTime(); // si ya practicó hoy, muestra el resumen en vez de empezar
+    if (blocked) return;
+    if (mode === "free") beginConversation();
+    else if (mode === "topic") askTopic();
+    else showModeChoice();
+  }
+
+  // ---------- Iniciar test de ubicación ----------
+  async function startPlacement(){
+    placementMode = true; level = "A1"; returningUser = false;
+    document.getElementById("levelLabel").textContent = "Ubicación";
+    resetChat();
+    initTextMode();
+    show("chat");
+    primeMic();
+    startTimeTracking();
+    await refreshTime();
+    if (blocked) return;
+    convoStarted = true;
+    sendToLein("", true);
+  }
+
+  // ---------- Práctica libre o "Tengo un tema" ----------
+  function showModeChoice(){
+    const card = document.createElement("div");
+    card.className = "modecard";
+    const title = document.createElement("div");
+    title.className = "mc-title"; title.textContent = "¿Cómo quieres practicar?";
+    const free = document.createElement("button");
+    free.className = "modebtn primary";
+    free.innerHTML = "<b>💬 Práctica libre</b>";
+    const tp = document.createElement("button");
+    tp.className = "modebtn";
+    tp.innerHTML = "<b>🎯 Tengo un tema</b>";
+    free.onclick = ()=>{ unlockAudio(); markActivity(); card.remove(); beginConversation(); };
+    tp.onclick = ()=>{ unlockAudio(); markActivity(); card.remove(); askTopic(); };
+    card.append(title, free, tp);
+    feed.appendChild(card); scrollDown();
+  }
+  function askTopic(){
+    awaitingTopic = true;
+    const n = document.createElement("div");
+    n.className = "note";
+    n.textContent = "🎯 ¿De qué quieres hablar? Dilo o escríbelo.";
+    const skip = document.createElement("button");
+    skip.className = "link"; skip.textContent = "Mejor práctica libre";
+    skip.onclick = ()=>{ if(!awaitingTopic) return; awaitingTopic = false; n.remove(); resetPlaceholder(); beginConversation(); };
+    n.appendChild(document.createElement("br")); n.appendChild(skip);
+    feed.appendChild(n); scrollDown();
+    document.getElementById("input").placeholder = "Di o escribe tu tema 🎤";
+    setStatus(TOPIC_TURN);
+  }
+  function setTopic(t){
+    topic = t.trim().slice(0, 160);
+    awaitingTopic = false;
+    resetPlaceholder();
+    feed.querySelectorAll(".note").forEach(n=>n.remove());
+    const chip = document.createElement("div");
+    chip.className = "topicchip"; chip.textContent = "🎯 Tema: " + topic;
+    feed.appendChild(chip); scrollDown();
+    beginConversation();
+  }
+  function resetPlaceholder(){ document.getElementById("input").placeholder = PLACEHOLDER; }
+  function beginConversation(){
+    convoStarted = true;
+    markActivity();
+    sendToLein("", true);
+  }
+
+  // Limpia el chat (al entrar o al volver atrás).
+  function resetChat(){
+    stopAllVoices();
+    history = []; lastSay = ""; busy = false;
+    sessionCorrections = []; recapDone = false;
+    convoStarted = false; awaitingTopic = false; topic = "";
+    endPending = false;
+    resetPlaceholder();
+    setStatus("");
+    setMicStatus("");
+    document.getElementById("voiceSheet").classList.remove("show");
+    document.getElementById("feed").innerHTML = "";
+  }
+
+  // ---------- Botón de atrás (vuelve al inicio) ----------
+  document.getElementById("backBtn").onclick = ()=>{
+    if(recording){ discardRec = true; stopRecording(); }
+    resetChat();
+    placementMode = false;
+    releaseMic();
+    setupWelcome();
+    show("welcome");
+    renderBrain();
+  };
+
+  // Volver del selector de nivel a la pantalla de inicio.
+  document.getElementById("levelBack").onclick = ()=>{
+    stopAllVoices();
+    setupWelcome();
+    show("welcome");
+    renderBrain();
+    dropTitle();
+  };
+
+  // ---------- Render de mensajes ----------
+  const feed = document.getElementById("feed");
+  function addBubble(text, who){
+    const b = document.createElement("div");
+    b.className = "bubble " + (who==="me"?"me":"lein");
+    b.textContent = text;
+    feed.appendChild(b); scrollDown(); return b;
+  }
+  function addHint(text){
+    if(!text) return;
+    const h = document.createElement("div");
+    h.className="hint"; h.textContent = "💡 " + text;
+    feed.appendChild(h); scrollDown();
+  }
+  // Tarjeta de corrección en español: "dijiste … → se dice …" + 🔊 para oír la forma correcta.
+  function addCorrection(d){
+    if(!d || !d.correction) return;
+    const c = document.createElement("div");
+    c.className = "correction";
+    if (d.fix_said && d.fix_better) {
+      const ct = document.createElement("span"); ct.className = "ct"; ct.textContent = "✏️ Corrección: ";
+      const said = document.createElement("span"); said.className = "said"; said.textContent = "dijiste “" + d.fix_said + "”";
+      const arrow = document.createTextNode(" → se dice ");
+      const better = document.createElement("span"); better.className = "better"; better.textContent = "“" + d.fix_better + "”";
+      const sp = document.createElement("button"); sp.className = "minispeak"; sp.textContent = "🔊";
+      sp.title = "Oír la forma correcta"; sp.setAttribute("aria-label", "Oír la forma correcta");
+      sp.onclick = ()=> speak(d.fix_better);
+      c.append(ct, said, arrow, better, sp);
+    } else {
+      c.textContent = "✏️ " + d.correction;
+    }
+    feed.appendChild(c); scrollDown();
+  }
+  function addSuggestions(arr){
+    if(!arr || !arr.length) return;
+    const lbl = document.createElement("div");
+    lbl.className = "ideas-label";
+    lbl.textContent = "💡 Ideas de respuesta — di la que sea real para ti:";
+    feed.appendChild(lbl);
+    const row = document.createElement("div");
+    row.className = "row-actions";
+    arr.forEach(s=>{
+      const c = document.createElement("button");
+      c.className="chip"; c.textContent = s;
+      // Tocar el chip ESCRIBE la frase en la casilla (no gasta voz).
+      c.onclick = ()=>{ const inp=document.getElementById("input"); inp.value=s; updateSendBtn(); inp.focus(); };
+      row.appendChild(c);
+    });
+    feed.appendChild(row); scrollDown();
+  }
+  // Burbuja de Lein: con texto, o (modo solo voz) un toque para oírla de nuevo.
+  function addLeinBubble(text, ttsId, spoken, speaking){
+    const b = document.createElement("div");
+    b.className = "bubble lein";
+    b.dataset.text = text; b.dataset.spoken = spoken || text;
+    if(speaking) b.dataset.speaking = "1";
+    if(ttsId){ b.dataset.tts = ttsId; b.dataset.ttsAt = String(Date.now()); }
+    b.onclick = ()=>{
+      if(!b.classList.contains("voiceonly")) return;
+      markActivity();
+      // El audio queda guardado en el servidor ~10 min: repetirlo no cuesta.
+      if(b.dataset.tts && Date.now() - Number(b.dataset.ttsAt) < 9*60*1000) speakJob(b.dataset.tts, b.dataset.spoken);
+      else speak(b.dataset.spoken);
+    };
+    renderLeinBubble(b);
+    feed.appendChild(b); scrollDown(); return b;
+  }
+  function renderLeinBubble(b){
+    if(!b.dataset.text) return;
+    b.classList.toggle("voiceonly", !textOn);
+    b.textContent = textOn ? b.dataset.text
+      : (b.dataset.speaking ? "🔊 Lein está hablando…" : "🔊 Toca para oír de nuevo");
+  }
+  // "No dije eso": si el micrófono entendió otra cosa, borra ese turno y vuelve a grabar.
+  let turnSnap = null, chatCtrl = null, undoing = false;
+  function addUndo(meNode){
+    feed.querySelectorAll(".undo").forEach(u=>u.remove());
+    const u = document.createElement("button");
+    u.className = "undo"; u.textContent = "↺ No dije eso";
+    u.title = "Borrar y volver a grabar";
+    u.onclick = undoLastTurn;
+    meNode.after(u);
+  }
+  function undoLastTurn(){
+    if(!turnSnap || blocked) return;
+    const s = turnSnap; turnSnap = null;
+    undoing = true;
+    if(chatCtrl){ try{ chatCtrl.abort(); }catch(e){} }
+    stopAllVoices();
+    let n = s.node; while(n){ const next = n.nextSibling; n.remove(); n = next; }
+    typingEl = null;
+    history.length = s.histLen;
+    sessionCorrections.length = s.corrLen;
+    saveDay(s.day);
+    setTimeout(()=>{ undoing = false; busy = false; setComposerBusy(false); startRecording(); }, 60);
+  }
+  // Estado grande bajo Lein, para que el alumno SIEMPRE sepa qué pasa.
+  const YOUR_TURN = "Tu turno: toca el micrófono 🎤";
+  const TOPIC_TURN = "Dime de qué quieres hablar 🎤";
+  let micTips = 0; // la burbuja "Tócalo y habla" sale solo las primeras 3 veces
+  function setStatus(text, wait){
+    const s = document.getElementById("leinStatus"); if(!s) return;
+    s.textContent = text || "";
+    s.classList.toggle("wait", !!wait);
+    // Cuando le toca al alumno, el micrófono "llama" la atención.
+    const yourTurn = text === YOUR_TURN || text === TOPIC_TURN;
+    const mic = document.getElementById("micBtn");
+    if (yourTurn && !mic.classList.contains("yourturn")) micTips++;
+    mic.classList.toggle("yourturn", yourTurn);
+    mic.classList.toggle("tip", yourTurn && micTips <= 3);
+  }
+  function stopMicNudge(){ document.getElementById("micBtn").classList.remove("yourturn", "tip"); }
+  let typingEl=null;
+  function showTyping(isOpening){
+    const label = isOpening ? "Lein está empezando la conversación…" : "Lein está pensando…";
+    typingEl=document.createElement("div"); typingEl.className="typing";
+    typingEl.innerHTML="<i></i><i></i><i></i><span></span>";
+    typingEl.querySelector("span").textContent = label;
+    feed.appendChild(typingEl); scrollDown();
+    leinState("listening");
+    setStatus(label, true);
+  }
+  function hideTyping(){ if(typingEl){typingEl.remove(); typingEl=null;} }
+  function scrollDown(){ feed.scrollTop = feed.scrollHeight; }
+
+  // Si Lein no responde: botón amable para reintentar (sin duplicar la burbuja del alumno).
+  function showRetry(text, isOpening, isRecap){
+    feed.querySelectorAll(".retrybtn").forEach(b=>b.remove());
+    leinState("idle"); setStatus("");
+    const b = document.createElement("button");
+    b.className = "retrybtn";
+    b.textContent = "Lein se demoró un poco. Toca para reintentar ↻";
+    b.onclick = ()=>{ b.remove(); sendToLein(text, isOpening, isRecap, true); };
+    feed.appendChild(b); scrollDown();
+  }
+  function setComposerBusy(on){
+    document.getElementById("sendBtn").disabled = on;
+    document.getElementById("micBtn").classList.toggle("busy", on);
+  }
+
+  // ---------- Hablar con Lein (backend) ----------
+  async function sendToLein(text, isOpening, isRecap, isRetry, fromVoice){
+    if (busy || blocked) return;
+    busy = true;
+    setComposerBusy(true);
+    feed.querySelectorAll(".retrybtn").forEach(b=>b.remove());
+
+    const isStudentTurn = !!text && !isOpening && !isRecap;
+    if (isStudentTurn && !isRetry){
+      const me = addBubble(text, "me");
+      turnSnap = { node: me, histLen: history.length, corrLen: sessionCorrections.length, day: loadDay() };
+      history.push({role:"user", content:text});
+      addBrainPower(1); countPhrase();
+      if (fromVoice) addUndo(me); // lo que Lein entendió queda a la vista, con opción de regrabar
+    }
+
+    showTyping(isOpening);
+    chatCtrl = new AbortController();
+    const chatTimer = setTimeout(()=>{ try{ chatCtrl.abort(); }catch(e){} }, 20000);
+    try{
+      const res = await fetch(API + "/api/chat", {
+        method:"POST", headers:{"Content-Type":"application/json"}, signal: chatCtrl.signal,
+        body: JSON.stringify({
+          text: isOpening ? (placementMode ? "Hello" : "Hi, let's start.") : text,
+          // El turno nuevo del alumno va en "text"; no lo mandamos repetido en el historial.
+          history: isStudentTurn ? history.slice(0, -1) : history,
+          level, placement: placementMode, studentId: STUDENT_ID,
+          opening: isOpening,
+          recap: !!isRecap, errors: isRecap ? sessionCorrections.map(c=>c.text) : [],
+          studentName: knownName || "",
+          topic, voice: selectedVoice,
+          returning: !!isOpening && returningUser // "Seguir practicando": no volver a pedir el nombre
+        })
+      });
+      const data = await res.json();
+
+      if (data.limitReached){ hideTyping(); showSummary(); return; }
+      if (data.error){ hideTyping(); showRetry(text, isOpening, isRecap); return; }
+
+      const wasPlacement = placementMode; // ¿este turno fue del test de ubicación?
+      // SOLO es resultado de nivel si REALMENTE veníamos del test de ubicación.
+      const isResult = wasPlacement && !!data.placement;
+      if (isResult){
+        placementMode = false; level = data.placement;
+        saveLevel(level); // el resultado se recuerda: mañana entra directo
+        document.getElementById("levelLabel").textContent = labelFor(level);
+        showToast(`🎉 ¡Tu nivel: ${labelFor(level)}!`);
+      }
+
+      // Recordar el nombre si Lein lo aprendió (para no preguntarlo otro día).
+      if (data.studentName && data.studentName !== knownName){
+        knownName = data.studentName;
+        localStorage.setItem(NAME_KEY, knownName);
+      }
+
+      lastSay = data.say || "";
+      history.push({role:"assistant", content:lastSay});
+
+      const hasFix = !wasPlacement && !isRecap && !!data.correction;
+      // Lo que se oye: primero la corrección, luego la respuesta.
+      const toSpeak = hasFix ? (data.correction + " ... " + lastSay) : lastSay;
+
+      if (hasFix){
+        const fix = { said: data.fix_said || "", better: data.fix_better || "", text: data.correction };
+        sessionCorrections.push(fix);
+        saveFix(fix);
+      }
+      // Con texto: el mensaje aparece YA. Solo voz: aparece cuando Lein EMPIEZA a
+      // hablar (mientras tanto sigue "Lein está pensando…").
+      let revealed = false, leinBubble = null;
+      const reveal = ()=>{
+        if (revealed) return; revealed = true;
+        hideTyping();
+        if (hasFix) addCorrection(data);
+        leinBubble = addLeinBubble(lastSay, data.ttsId, toSpeak, leinSpeaking);
+        addHint(data.hint);
+        // Sugerencias: solo en conversación normal (en la ubicación necesitamos sus propias palabras).
+        if (!wasPlacement) addSuggestions(data.suggestions);
+      };
+      leinSpeaking = true;
+      if (textOn) reveal();
+      setTimeout(reveal, 8000); // respaldo si la voz no arranca
+      const onVoiceStart = ()=>{ reveal(); leinState("talking"); setStatus("Lein está hablando…"); };
+      const afterVoice = ()=>{
+        leinSpeaking = false; markActivity();
+        reveal();
+        if (leinBubble){ delete leinBubble.dataset.speaking; renderLeinBubble(leinBubble); }
+        if (!blocked) setStatus(awaitingTopic ? "" : YOUR_TURN);
+        maybeEnd();
+      };
+      if (data.ttsId) speakJob(data.ttsId, toSpeak, afterVoice, onVoiceStart);
+      else speak(toSpeak, null, afterVoice, onVoiceStart);
+
+      if (data._timeStatus) updateTime(data._timeStatus);
+      if (data._cost) updateMeter(data._cost);
+    }catch(err){
+      if (undoing) return; // el alumno tocó "No dije eso": no es un error
+      hideTyping();
+      showRetry(text, isOpening, isRecap);
+    }finally{
+      clearTimeout(chatTimer); chatCtrl = null;
+      busy=false; setComposerBusy(false);
+      maybeEnd();
+    }
+  }
+
+  // ---------- Enviar desde el input ----------
+  function submit(){
+    const inp = document.getElementById("input");
+    const t = inp.value.trim();
+    if(!t || busy || blocked) return;
+    inp.value=""; updateSendBtn(); markActivity();
+    if (awaitingTopic) { setTopic(t); return; }
+    if (!convoStarted) return; // aún eligiendo cómo practicar
+    sendToLein(t, false);
+  }
+  document.getElementById("sendBtn").onclick = submit;
+  document.getElementById("input").addEventListener("keydown", e=>{ if(e.key==="Enter") submit(); });
+  // Voz primero: el botón de enviar solo aparece cuando hay algo escrito.
+  function updateSendBtn(){ document.getElementById("sendBtn").classList.toggle("hide", !document.getElementById("input").value.trim()); }
+  document.getElementById("input").addEventListener("input", ()=>{ updateSendBtn(); markActivity(); stopMicNudge(); });
+  document.getElementById("textBtn").onclick = ()=>{
+    textOn = !textOn;
+    try{ localStorage.setItem(TEXT_KEY, textOn ? "1" : "0"); }catch(e){}
+    applyTextMode(); markActivity();
+  };
+
+  // ---------- Micrófono (voz -> texto) ----------
+  let mediaStream=null, mediaRecorder=null, recChunks=[], recAudioCtx=null, vadInt=null, recording=false, recProcessed=false, recMaxTimer=null;
+  let discardRec = false, recStartedAt = 0;
+
+  function setMicStatus(html){
+    const s=document.getElementById("micStatus");
+    if(!html){ s.classList.remove("show"); s.innerHTML=""; return; }
+    s.innerHTML=html; s.classList.add("show");
+    const r=document.getElementById("micRetry");
+    if(r) r.onclick=()=>{ setMicStatus(""); mediaStream=null; startRecording(); };
+  }
+  function setMicUI(state){
+    const b=document.getElementById("micBtn"); if(!b) return;
+    b.classList.remove("recording");
+    if(state==="recording"){ b.textContent="⏹"; b.classList.add("recording"); b.title="Detener"; }
+    else if(state==="transcribing"){ b.textContent="…"; b.title="Procesando"; }
+    else { b.textContent="🎤"; b.title="Hablar"; }
+  }
+  function pickMime(){
+    const types=["audio/webm;codecs=opus","audio/webm","audio/mp4","audio/aac","audio/ogg"];
+    for(const t of types){ try{ if(window.MediaRecorder && MediaRecorder.isTypeSupported(t)) return t; }catch(e){} }
+    return "";
+  }
+  async function ensureMic(){
+    if(mediaStream && mediaStream.getAudioTracks().some(t=>t.readyState==="live")) return mediaStream;
+    mediaStream = await navigator.mediaDevices.getUserMedia({ audio:{ echoCancellation:true, noiseSuppression:true, autoGainControl:true } });
+    return mediaStream;
+  }
+  // Suelta el micrófono (corta las pistas). Clave en iPhone: con el micro abierto
+  // el audio sale por el auricular bajito; al soltarlo, vuelve al altavoz fuerte.
+  function releaseMic(){
+    try{ if(mediaStream){ mediaStream.getTracks().forEach(t=>{ try{ t.stop(); }catch(e){} }); } }catch(e){}
+    mediaStream=null;
+  }
+  // Al entrar al chat: pedimos el permiso de una vez, con un mensaje claro si lo niega.
+  async function primeMic(){
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder){
+      setMicStatus("Este navegador no permite el micrófono. Puedes escribir.");
+      return;
+    }
+    try{
+      await ensureMic();
+      if(MOBILE) releaseMic(); // en celular lo soltamos hasta que toque el micro (la voz suena fuerte)
+    }catch(err){ handleMicError(err); }
+  }
+  async function startRecording(){
+    if(recording || busy || blocked || transcribing) return;
+    if(!convoStarted && !awaitingTopic){ setMicStatus("Primero elige: 💬 Práctica libre o 🎯 Tengo un tema 👆"); return; }
+    stopAllVoices(); // si Lein sigue hablando y el alumno quiere responder, le cedemos la palabra
+    markActivity();
+    try{
+      const stream = await ensureMic();
+      recChunks=[]; recProcessed=false; discardRec=false;
+      const mime=pickMime();
+      mediaRecorder = new MediaRecorder(stream, mime?{mimeType:mime}:undefined);
+      mediaRecorder.ondataavailable = e=>{ if(e.data && e.data.size) recChunks.push(e.data); };
+      mediaRecorder.onstop = onRecStop;
+      mediaRecorder.start(250);
+      recording=true; recStartedAt=Date.now();
+      setMicUI("recording");
+      setMicStatus("");
+      setStatus("Te escucho… toca ⏹ al terminar");
+      leinState("listening");
+      startVAD(stream);
+      recMaxTimer=setTimeout(()=>{ if(recording) stopRecording(); }, 20000); // tope duro de respaldo
+    }catch(err){ handleMicError(err); }
+  }
+  function stopRecording(){
+    if(!recording) return;
+    recording=false;
+    if(recMaxTimer){ clearTimeout(recMaxTimer); recMaxTimer=null; }
+    stopVAD();
+    setMicStatus("");
+    setMicUI(discardRec ? "idle" : "transcribing");
+    transcribing = !discardRec;
+    setStatus(discardRec ? "" : "Un momento…", true);
+    leinState("idle");
+    try{ mediaRecorder.stop(); }catch(e){ onRecStop(); }
+    // Respaldo: si onstop no dispara (pasa en algunos móviles), procesamos igual.
+    setTimeout(()=>{ onRecStop(); }, 1800);
+  }
+  async function onRecStop(){
+    if(recProcessed) return; recProcessed=true;
+    const blob=new Blob(recChunks,{type:(mediaRecorder && mediaRecorder.mimeType)||"audio/webm"});
+    recChunks=[];
+    // En celular soltamos el micrófono YA (la voz de Lein vuelve al altavoz).
+    if(MOBILE || !inChat()) releaseMic();
+    if(discardRec){
+      discardRec=false; transcribing=false; setMicUI("idle");
+      if(inChat() && !blocked && convoStarted) setStatus(YOUR_TURN);
+      if(inChat() && !blocked) setMicStatus("No te escuché 🙉 — toca el micro e inténtalo otra vez.");
+      maybeEnd(); return;
+    }
+    if(!blob.size){ transcribing=false; setMicUI("idle"); setMicStatus("No te escuché 🙉 — toca el micro e inténtalo otra vez."); maybeEnd(); return; }
+    try{
+      const lang = awaitingTopic ? "&lang=auto" : ""; // el tema puede venir en español
+      // Contexto para el "oído": lo último que dijo Lein (lo que el alumno responde).
+      const ctx = encodeURIComponent((lastSay || "").slice(0, 300));
+      const res=await fetchT(API+"/api/stt?studentId="+encodeURIComponent(STUDENT_ID)+lang,{method:"POST",headers:{"Content-Type":blob.type,"X-Lein-Context":ctx},body:blob}, 20000);
+      const data=await res.json();
+      transcribing=false; setMicUI("idle");
+      if(data.error || !(data.text||"").trim()) setStatus(YOUR_TURN);
+      if(data.error){ setMicStatus("Hubo un problema de conexión 📶 — toca el micro e inténtalo otra vez."); maybeEnd(); return; }
+      const text=(data.text||"").trim();
+      if(!text){ setMicStatus("No te escuché bien 🙉 — toca el micro e inténtalo otra vez."); maybeEnd(); return; }
+      if(awaitingTopic) setTopic(text);
+      else sendToLein(text,false,false,false,true);
+    }catch(e){
+      transcribing=false; setMicUI("idle");
+      setMicStatus("Hubo un problema de conexión 📶 — toca el micro e inténtalo otra vez.");
+      setStatus(YOUR_TURN);
+      maybeEnd();
+    }
+  }
+
+  // Detector de voz: mide el ruido del lugar y corta solo cuando dejas de hablar.
+  function startVAD(stream){
+    try{
+      recAudioCtx=new (window.AudioContext||window.webkitAudioContext)();
+      if(recAudioCtx.state==="suspended"){ try{ recAudioCtx.resume(); }catch(e){} } // clave en móvil
+      const src=recAudioCtx.createMediaStreamSource(stream);
+      const an=recAudioCtx.createAnalyser(); an.fftSize=512;
+      src.connect(an);
+      const data=new Uint8Array(an.fftSize);
+      const t0=Date.now();
+      // Principiantes hacen pausas más largas mientras piensan.
+      // Cuánto silencio esperar antes de enviar: los adultos se quedan pensando a
+      // mitad de frase. Si ya terminó, puede tocar ⏹ para enviar al instante.
+      const SILENCE_MS = (level==="A1" || level==="A1+" || placementMode) ? 2200
+                       : (level==="A2" || level==="B1") ? 1800 : 1400;
+      let floor=null, spoke=false, lastLoud=0, speechLvl=0, noiseLvl=null, sm=0;
+      vadInt=setInterval(()=>{
+        if(!recording) return;
+        an.getByteTimeDomainData(data);
+        let sum=0; for(let i=0;i<data.length;i++){ const v=(data[i]-128)/128; sum+=v*v; }
+        const raw=Math.sqrt(sum/data.length); const now=Date.now();
+        sm = sm ? sm*0.5 + raw*0.5 : raw; const rms = sm; // suavizado: ignora chasquidos sueltos
+        // Ruido del lugar = lo más bajo que se oye al inicio. Así, si el alumno
+        // empieza a hablar enseguida, su voz NO se confunde con ruido.
+        if(now-t0<500) floor = (floor===null) ? rms : Math.min(floor, rms);
+        const nf=Math.min(floor===null ? 0.01 : floor, 0.03);
+        if(noiseLvl===null) noiseLvl = nf;
+        const speakTh=Math.max(0.016, nf*1.8+0.009); // tu voz sobre el ruido
+        // "Hablando" = por encima del ruido inicial, de una parte de TU voz y del
+        // ruido ACTUAL del cuarto (el micrófono sube el volumen solo cuando callas;
+        // antes ese ruido reiniciaba la cuenta del silencio y nunca cortaba).
+        const loudTh = Math.max(speakTh, speechLvl*0.3, noiseLvl*1.7);
+        speechLvl = Math.max(speechLvl*0.997, spoke || rms>speakTh ? rms : 0); // tu voz: sube rápido, baja lento
+        if(rms>loudTh){ spoke=true; lastLoud=now; }
+        if(!spoke || rms < speechLvl*0.5) noiseLvl = noiseLvl*0.85 + rms*0.15; // ruido actual
+        if(spoke && rms<=loudTh && now-lastLoud>SILENCE_MS){ stopRecording(); return; } // callado -> enviar
+        // 8 s sin voz: no mandamos audio vacío (evita respuestas a cosas que no dijo).
+        if(!spoke && now-t0>8000){ discardRec=true; stopRecording(); return; }
+        if(now-t0>20000){ stopRecording(); return; } // tope duro
+      }, 60);
+    }catch(e){ /* el tope de startRecording cierra si algo falla */ }
+  }
+  function stopVAD(){ if(vadInt){ clearInterval(vadInt); vadInt=null; } if(recAudioCtx){ try{recAudioCtx.close();}catch(e){} recAudioCtx=null; } }
+
+  function handleMicError(err){
+    recording=false; setMicUI("idle");
+    const name=(err && err.name) || "";
+    if(name==="NotAllowedError" || name==="SecurityError"){
+      setMicStatus("🎤 Micrófono bloqueado: toca el candado 🔒 de arriba → Permitir. <button class='actbtn' id='micRetry'>Reintentar</button>");
+    } else if(name==="NotFoundError"){
+      setMicStatus("No encuentro micrófono en este equipo. Puedes escribir mientras tanto.");
+    } else {
+      setMicStatus("No pude usar el micrófono. Puedes escribir, o <button class='actbtn' id='micRetry'>Reintentar</button>");
+    }
+  }
+
+  document.getElementById("micBtn").onclick = ()=>{
+    unlockAudio(); markActivity();
+    if(recording) stopRecording(); // si lo detiene a mano, se envía lo grabado
+    else startRecording();
+  };
+  window.addEventListener("pagehide", releaseMic);
+
+  // ---------- Contador de tiempo (tiempo activo) ----------
+  // Cuenta SOLO práctica activa, segundo a segundo: mientras el alumno habla o
+  // escucha a Lein, y hasta 20 s pensando su respuesta. Se PAUSA si Lein está
+  // pensando, si está en otra pestaña/ventana, fuera del chat o sin hacer nada.
+  let pingTimer=null, tickTimer=null, pendingSecs=0, serverRemaining=null, lastActivity=Date.now();
+  const THINK_SECONDS = 20;
+  function markActivity(){ lastActivity = Date.now(); }
+  function practicing(){
+    if(document.hidden || blocked || !inChat() || !convoStarted) return false;
+    if(busy || transcribing) return false;          // Lein pensando: no cuenta
+    if(recording || leinSpeaking) return true;      // hablando o escuchando: cuenta
+    if(document.hasFocus && !document.hasFocus()) return false; // está en otra ventana
+    return Date.now() - lastActivity < THINK_SECONDS * 1000;
+  }
+  function startTimeTracking(){
+    if(tickTimer) return;
+    tickTimer = setInterval(()=>{
+      const on = practicing();
+      document.getElementById("timePill").classList.toggle("paused", !on);
+      if(!on) return;
+      pendingSecs++;
+      renderTime();
+      if(serverRemaining !== null && serverRemaining - pendingSecs <= 0) flushPractice();
+    }, 1000);
+    pingTimer = setInterval(flushPractice, 10000);
+  }
+  async function flushPractice(){
+    if(!pendingSecs) return;
+    const secs = Math.min(pendingSecs, 60); pendingSecs -= secs;
+    try{
+      const r = await fetchT(API + "/api/usage/ping", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ studentId: STUDENT_ID, seconds: secs })
+      }, 10000);
+      updateTime(await r.json());
+    }catch(e){ pendingSecs += secs; }
+  }
+  function renderTime(){
+    if(serverRemaining === null) return;
+    const rem = Math.max(0, serverRemaining - pendingSecs);
+    const m = Math.floor(rem/60), s = rem%60;
+    document.getElementById("timePill").textContent = `${m}:${String(s).padStart(2,"0")}`;
+  }
+  window.addEventListener("pagehide", ()=>{ flushPractice(); });
+  async function refreshTime(){
+    try{
+      const r = await fetchT(API + "/api/usage/status?studentId=" + encodeURIComponent(STUDENT_ID), {}, 8000);
+      updateTime(await r.json());
+    }catch(e){}
+  }
+  // Medidor de costo (SOLO si la URL trae ?meter=1). Los alumnos no lo ven.
+  function updateMeter(cost){
+    if(!METER || !cost) return;
+    const pill = document.getElementById("meterPill");
+    if(!pill) return;
+    pill.style.display = "inline-block";
+    pill.textContent = "💲" + (cost.sessionUSD||0).toFixed(4) + " · " + (cost.turns||0) + "t";
+    pill.title = "Sesión hoy: $" + (cost.sessionUSD||0).toFixed(4) + " · último turno: $" + (cost.turnUSD||0).toFixed(4) + " (solo dueño)";
+  }
+  function updateTime(st){
+    if(!st || st.remainingSeconds === undefined) return;
+    serverRemaining = Math.max(0, st.remainingSeconds||0);
+    renderTime();
+    const rem = Math.max(0, serverRemaining - pendingSecs);
+    // Faltando ~1 min: repaso final de los errores (si hubo) y pedir repetir.
+    if (!recapDone && !busy && !placementMode && !blocked && convoStarted
+        && sessionCorrections.length > 0
+        && rem <= RECAP_AT_SECONDS_LEFT && rem > 0){
+      recapDone = true;
+      sendToLein("", false, true);
+    }
+    if (st.blocked){ endPending = true; maybeEnd(); }
+  }
+  // Cierra el día SOLO cuando el turno actual terminó (no corta a mitad de frase).
+  function maybeEnd(){
+    if(!endPending || blocked) return;
+    if(busy || recording || transcribing || leinSpeaking) return;
+    showSummary();
+  }
+  // Tarjeta de cierre: frases de hoy, correcciones aprendidas (en verde) y días seguidos.
+  function showSummary(){
+    blocked = true; endPending = false;
+    flushPractice();
+    if(pingTimer){ clearInterval(pingTimer); pingTimer=null; }
+    if(tickTimer){ clearInterval(tickTimer); tickTimer=null; }
+    if(recording){ discardRec = true; stopRecording(); }
+    releaseMic();
+    document.getElementById("input").disabled = true;
+    document.getElementById("sendBtn").disabled = true;
+    const day = loadDay();
+    document.getElementById("sumTitle").textContent = knownName ? `¡Buen trabajo hoy, ${knownName}!` : "¡Buen trabajo hoy!";
+    document.getElementById("sumPhrases").textContent = day.phrases;
+    document.getElementById("sumFixes").textContent = day.fixes.length;
+    document.getElementById("sumDays").textContent = Math.max(1, streakDays());
+    const list = document.getElementById("sumList");
+    list.innerHTML = "";
+    if (day.fixes.length){
+      day.fixes.forEach(f=>{
+        const li = document.createElement("li");
+        const ok = document.createElement("span"); ok.className = "ok";
+        ok.textContent = "✓ " + (f.better || f.text);
+        li.appendChild(ok);
+        if (f.said){
+          const was = document.createElement("span"); was.className = "was";
+          was.textContent = "Antes decías: “" + f.said + "”";
+          li.appendChild(was);
+        }
+        list.appendChild(li);
+      });
+    } else {
+      const li = document.createElement("li"); li.className = "none";
+      li.textContent = day.phrases ? "Hoy no hubo nada importante que corregir. ¡Excelente! 🎉" : "Mañana practicamos juntos. ¡Te espero!";
+      list.appendChild(li);
+    }
+    document.getElementById("blockedOverlay").classList.add("active");
+  }
+
+  // ---------- Selector de voz (dentro del chat; solo si hay voz premium) ----------
+  const sampleCache = {}; // guarda la muestra de cada voz (clic siguiente = instantáneo)
+  const SAMPLE_TEXT = "Hi there! I'm Lein. Nice to meet you!";
+  async function playSample(voice, btn){
+    unlockAudio();
+    const myToken = ++speakSeq;
+    try{ leinAudio.pause(); }catch(e){}
+    if(btn) btn.classList.add("loading");
+    const stop = ()=>{ if(btn) btn.classList.remove("loading"); };
+    try{
+      let url = sampleCache[voice];
+      if(!url){
+        const res = await fetchT(API + "/api/tts", {
+          method:"POST", headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({ text: SAMPLE_TEXT, level: "A2", voice })
+        }, 15000);
+        if(!res.ok || !(res.headers.get("content-type")||"").includes("audio")){ stop(); return; }
+        url = URL.createObjectURL(await res.blob());
+        sampleCache[voice] = url;
+      }
+      if(myToken !== speakSeq){ stop(); return; } // tocó otra voz: descartar
+      leinAudio.onplaying = null;
+      leinAudio.src = url; leinAudio.currentTime = 0;
+      leinAudio.onplay   = stop;  // quita el "cargando" en cuanto suena
+      leinAudio.onended  = stop;
+      leinAudio.onerror  = stop;
+      await leinAudio.play().catch(stop);
+    }catch(e){ stop(); }
+  }
+  document.getElementById("voiceBtn").onclick = ()=>{
+    document.getElementById("voiceSheet").classList.toggle("show");
+  };
+
+  fetch(API + "/api/health").then(r=>r.json()).then(h=>{
+    // Si no hay transcripción, ocultar el micrófono (queda solo escribir).
+    if (h.sttProvider !== "openai"){ const mb=document.getElementById("micBtn"); if(mb) mb.style.display="none"; }
+    // Botón de prueba del repaso (solo en modo desarrollo, cuando el tope es alto).
+    if (h.dailyLimitMinutes > 30){
+      const dr = document.getElementById("devRecap");
+      dr.style.display = "grid";
+      dr.onclick = ()=>{ if(!busy && !placementMode && convoStarted){ recapDone = true; sendToLein("", false, true); } };
+    }
+    if(h.ttsProvider === "openai"){
+      // El saludo de bienvenida solo lo oye quien entra por primera vez (elige nivel).
+      if (!(savedLevel && LEVEL_LABELS[savedLevel])) precacheWelcome();
+      const vbtn = document.getElementById("voiceBtn");
+      vbtn.style.display = "grid";
+      const vs = document.getElementById("voiceSheet");
+      vs.querySelectorAll("button").forEach(b=>{
+        if(b.dataset.voice === selectedVoice) b.classList.add("sel");
+        b.onclick = ()=>{
+          selectedVoice = b.dataset.voice;
+          localStorage.setItem("lein_voice", selectedVoice);
+          vs.querySelectorAll("button").forEach(x=>x.classList.toggle("sel", x===b)); // resalta YA
+          playSample(selectedVoice, b);
+        };
+      });
+    } else {
+      serverTTS = false;
+    }
+  }).catch(()=>{});
+
+  // Sonido corto "fun" por palabra, como mini-archivo de audio (suena en iPhone
+  // aunque tenga el interruptor de silencio, igual que la voz).
+  function makeBeepUrl(freq, ms){
+    const sr=8000, n=Math.floor(sr*ms/1000), buf=new ArrayBuffer(44+n*2), dv=new DataView(buf);
+    let p=0; const w=s=>{ for(let i=0;i<s.length;i++) dv.setUint8(p++, s.charCodeAt(i)); };
+    w("RIFF"); dv.setUint32(p,36+n*2,true);p+=4; w("WAVE"); w("fmt ");
+    dv.setUint32(p,16,true);p+=4; dv.setUint16(p,1,true);p+=2; dv.setUint16(p,1,true);p+=2;
+    dv.setUint32(p,sr,true);p+=4; dv.setUint32(p,sr*2,true);p+=4; dv.setUint16(p,2,true);p+=2; dv.setUint16(p,16,true);p+=2;
+    w("data"); dv.setUint32(p,n*2,true);p+=4;
+    for(let i=0;i<n;i++){ const t=i/sr, env=Math.exp(-t*13), s=Math.sin(2*Math.PI*freq*t)*env*0.5;
+      dv.setInt16(p, Math.max(-1,Math.min(1,s))*32767, true); p+=2; }
+    let bin=""; const u8=new Uint8Array(buf); for(let i=0;i<u8.length;i++) bin+=String.fromCharCode(u8[i]);
+    return "data:audio/wav;base64,"+btoa(bin);
+  }
+  const _beeps=[];
+  (function(){ const notes=[523,587,659,698,784,880,988]; for(const f of notes){ try{ const a=new Audio(makeBeepUrl(f,170)); a.preload="auto"; a.volume=0.5; _beeps.push(a); }catch(e){} } })();
+  function unlockBeeps(){ _beeps.forEach(a=>{ try{ a.muted=true; const pr=a.play(); if(pr&&pr.then) pr.then(()=>{ a.pause(); a.currentTime=0; a.muted=false; }).catch(()=>{ a.muted=false; }); }catch(e){} }); }
+  function pop(i){ try{ const a=_beeps[i % _beeps.length]; if(a){ a.currentTime=0; a.play().catch(()=>{}); } }catch(e){} }
+  function dropTitle(){
+    const words = document.querySelectorAll("#heroTitle .w");
+    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if(reduce){ words.forEach(w=>{ w.style.opacity="1"; w.style.transform="none"; }); return; }
+    words.forEach((w,i)=>{
+      w.classList.remove("drop"); w.style.opacity=""; w.style.transform=""; void w.offsetWidth;
+      setTimeout(()=>{ w.classList.add("drop"); pop(i); }, 150 + i*240);
+    });
+    // Seguridad: dejarlas visibles aunque la animación no corra.
+    setTimeout(()=>{ words.forEach(w=>{ w.style.opacity="1"; w.style.transform="none"; }); }, 150 + words.length*240 + 900);
+  }
+  // Los navegadores no permiten sonido antes del primer toque. Así que en el
+  // PRIMER toque desbloqueamos el audio y reproducimos el título con su sonido.
+  let firstTouchDone=false;
+  window.addEventListener("pointerdown", ()=>{
+    if(firstTouchDone) return; firstTouchDone=true;
+    try{ unlockAudio(); }catch(e){}
+    if(document.getElementById("welcome").classList.contains("active")) dropTitle();
+  }, { once:true });
+
+  // Altura REAL de la pantalla visible (en móvil la barra del navegador cambia
+  // el alto; 100dvh no siempre funciona en iPhone viejo). Así el micrófono SIEMPRE
+  // queda abajo, sin tener que hacer scroll.
+  function setAppHeight(){
+    const h = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+    if(h) document.documentElement.style.setProperty("--app-h", h + "px");
+  }
+  setAppHeight();
+  window.addEventListener("resize", setAppHeight);
+  window.addEventListener("orientationchange", ()=> setTimeout(setAppHeight, 300));
+  if(window.visualViewport){ window.visualViewport.addEventListener("resize", setAppHeight); }
+
+  // estado inicial
+  setupWelcome();
+  renderBrain();
+  dropTitle();
+  leinState("idle");
+</script>
+</body>
+</html>
