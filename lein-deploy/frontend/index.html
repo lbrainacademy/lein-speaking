@@ -268,6 +268,12 @@
   @keyframes micnudge{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
   @keyframes micring{0%{transform:scale(1);opacity:.9}100%{transform:scale(1.7);opacity:0}}
   @media (prefers-reduced-motion: reduce){ .micbtn.yourturn,.micbtn.yourturn::after{animation:none} }
+  /* Tarjeta "Tu turno: repite" (práctica de repetir la frase corregida) */
+  .repeatcard{align-self:stretch;text-align:center;background:rgba(255,176,90,.09);border:1px solid rgba(255,176,90,.45);
+    border-radius:16px;padding:12px 16px}
+  .repeatcard .rl{font-size:15px;color:#ffd9a8;font-weight:600}
+  .repeatcard .rt{font-family:'Sora',sans-serif;font-size:22px;font-weight:600;color:#fff;margin-top:4px;line-height:1.35}
+  .repeatcard .minispeak{border-color:rgba(255,176,90,.6);background:rgba(255,176,90,.15);color:#fff}
   .typing{align-items:center}
   .typing span{margin-left:6px;font-size:18px;color:#cdbfb0}
   .welcome-more{display:none;flex-direction:column;align-items:center;gap:12px}
@@ -932,7 +938,7 @@
     history = []; lastSay = ""; busy = false;
     sessionCorrections = []; recapDone = false;
     convoStarted = false; awaitingTopic = false; topic = "";
-    endPending = false;
+    endPending = false; repeatPending = false;
     resetPlaceholder();
     setStatus("");
     setMicStatus("");
@@ -991,6 +997,20 @@
     } else {
       c.textContent = "✏️ " + d.correction;
     }
+    feed.appendChild(c); scrollDown();
+  }
+  // "🔁 Tu turno: repite": la frase correcta en grande, con 🔊 para oírla otra vez.
+  function addRepeatCard(target){
+    repeatPending = true;
+    const c = document.createElement("div");
+    c.className = "repeatcard";
+    const l = document.createElement("div"); l.className = "rl"; l.textContent = "🔁 Tu turno: repite";
+    const r = document.createElement("div"); r.className = "rt"; r.textContent = target;
+    const sp = document.createElement("button"); sp.className = "minispeak"; sp.textContent = "🔊";
+    sp.title = "Oír la frase"; sp.setAttribute("aria-label", "Oír la frase");
+    sp.onclick = ()=>{ markActivity(); speak(target); };
+    r.appendChild(sp);
+    c.append(l, r);
     feed.appendChild(c); scrollDown();
   }
   function addSuggestions(arr){
@@ -1054,18 +1074,21 @@
     history.length = s.histLen;
     sessionCorrections.length = s.corrLen;
     saveDay(s.day);
+    repeatPending = !!s.repeat; // si estaba repitiendo la frase, sigue siendo su turno de repetir
     setTimeout(()=>{ undoing = false; busy = false; setComposerBusy(false); startRecording(); }, 60);
   }
   // Estado grande bajo Lein, para que el alumno SIEMPRE sepa qué pasa.
   const YOUR_TURN = "Tu turno: toca el micrófono 🎤";
   const TOPIC_TURN = "Dime de qué quieres hablar 🎤";
+  const REPEAT_TURN = "Tu turno: repite la frase 🎤";
+  let repeatPending = false; // Lein pidió repetir una frase: el próximo turno del alumno es la repetición
   let micTips = 0; // la burbuja "Tócalo y habla" sale solo las primeras 3 veces
   function setStatus(text, wait){
     const s = document.getElementById("leinStatus"); if(!s) return;
     s.textContent = text || "";
     s.classList.toggle("wait", !!wait);
     // Cuando le toca al alumno, el micrófono "llama" la atención.
-    const yourTurn = text === YOUR_TURN || text === TOPIC_TURN;
+    const yourTurn = text === YOUR_TURN || text === TOPIC_TURN || text === REPEAT_TURN;
     const mic = document.getElementById("micBtn");
     if (yourTurn && !mic.classList.contains("yourturn")) micTips++;
     mic.classList.toggle("yourturn", yourTurn);
@@ -1110,10 +1133,11 @@
     const isStudentTurn = !!text && !isOpening && !isRecap;
     if (isStudentTurn && !isRetry){
       const me = addBubble(text, "me");
-      turnSnap = { node: me, histLen: history.length, corrLen: sessionCorrections.length, day: loadDay() };
+      turnSnap = { node: me, histLen: history.length, corrLen: sessionCorrections.length, day: loadDay(), repeat: repeatPending };
       history.push({role:"user", content:text});
       addBrainPower(1); countPhrase();
       if (fromVoice) addUndo(me); // lo que Lein entendió queda a la vista, con opción de regrabar
+      repeatPending = false;
     }
 
     showTyping(isOpening);
@@ -1163,7 +1187,7 @@
       // El historial guarda TODO lo que Lein dijo, corrección incluida. Si solo
       // guardábamos la pregunta, en el turno siguiente Claude veía el error viejo
       // "sin corregir" y lo volvía a corregir en vez del error nuevo.
-      history.push({role:"assistant", content: hasFix ? (data.correction + " " + lastSay) : lastSay});
+      history.push({role:"assistant", content: lastSay, correction: hasFix ? data.correction : null});
 
       if (hasFix){
         const fix = { said: data.fix_said || "", better: data.fix_better || "", text: data.correction };
@@ -1178,6 +1202,7 @@
         hideTyping();
         if (hasFix) addCorrection(data);
         leinBubble = addLeinBubble(lastSay, data.ttsId, toSpeak, leinSpeaking);
+        if (data.repeat_target) addRepeatCard(data.repeat_target);
         addHint(data.hint);
         // Sugerencias: solo en conversación normal (en la ubicación necesitamos sus propias palabras).
         if (!wasPlacement) addSuggestions(data.suggestions);
@@ -1189,7 +1214,7 @@
         leinSpeaking = false; markActivity();
         reveal();
         if (leinBubble){ delete leinBubble.dataset.speaking; renderLeinBubble(leinBubble); }
-        if (!blocked) setStatus(awaitingTopic ? "" : YOUR_TURN);
+        if (!blocked) setStatus(awaitingTopic ? "" : (repeatPending ? REPEAT_TURN : YOUR_TURN));
         maybeEnd();
       };
       if (data.ttsId) speakJob(data.ttsId, toSpeak, afterVoice, onVoiceStart);
@@ -1324,7 +1349,7 @@
     }
     if(!blob.size){ transcribing=false; setMicUI("idle"); setMicStatus("No te escuché 🙉 — toca el micro e inténtalo otra vez."); maybeEnd(); return; }
     try{
-      const lang = awaitingTopic ? "&lang=auto" : ""; // el tema puede venir en español
+      const lang = (awaitingTopic ? "&lang=auto" : "") + (repeatPending ? "&repeat=1" : ""); // tema en español / repetición
       // Contexto para el "oído": lo último que dijo Lein (lo que el alumno responde).
       const ctx = encodeURIComponent((lastSay || "").slice(0, 300));
       const res=await fetchT(API+"/api/stt?studentId="+encodeURIComponent(STUDENT_ID)+lang,{method:"POST",headers:{"Content-Type":blob.type,"X-Lein-Context":ctx},body:blob}, 20000);
