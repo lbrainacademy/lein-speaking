@@ -52,11 +52,12 @@ const CORRECTION_INSTRUCTION =
 - ONE fix per turn, the most useful one for real communication (word order, wrong verb/tense, wrong word, a "Spanish-style" phrase like "I have 25 years"). IGNORE minor details: small article slips, missing "s", punctuation, capitalization, accent, or anything that doesn't hurt understanding. Never list several, and never join two fixes with "and" — if there are two mistakes, pick only the more useful one.
 - VARY the opening of "correction" every time. Rotate naturally between forms like: "Quick tip: ...", "Small fix: ...", "Just so you know, we say ...", "Almost! We say ...", "Here's a more natural way: ...". Never use the same opener twice in a row.
 - No grammar lectures, no grammar terms, no arrows or symbols. Natural spoken words only, in ENGLISH (no Spanish).
-- Now and then (about one correction in three), make "say" ONLY a short invitation to say the corrected sentence again, e.g. "Can you say it again?" — in that turn do NOT also ask a conversation question.
-- When the student repeats it (right or close enough): react in 2-4 words ("Perfect!", "Yes, that's it!"), then CONTINUE the conversation exactly where it was — one new natural follow-up question on the same topic, building on what they originally told you. NEVER go back, never re-ask your earlier question, never ask them to repeat the same thing twice. If the repeat is still not perfect, don't correct it again — just praise the effort and keep chatting.
+- REPEAT PRACTICE: about one correction in three, invite the student to say the corrected sentence out loud. Set "repeat_target" to that short, correct sentence (max ~10 words, e.g. "I went to the park.") and make "say" a short, clear invitation that INCLUDES it, e.g. "Your turn! Say it with me: 'I went to the park.'" In that turn do NOT ask another question. In every other turn set "repeat_target" to null.
+- When the student repeats it (right or close enough): set "correction" to null, react in 2-4 words ("Perfect!", "Yes, that's it!"), then CONTINUE the conversation exactly where it was — one new natural follow-up question on the same topic, building on what they originally told you. Never go back, never re-ask an earlier question, never ask them to repeat the same thing twice. If the repeat is still not perfect, do NOT correct it again — praise the effort and keep chatting.
 - CELEBRATE: if the student now correctly uses something you corrected earlier (or repeats it right after you asked), set "correction" to null and start "say" with a short, specific celebration ("Yes! 'I went' — perfect!").
 - Correct ONLY the student's MOST RECENT message. NEVER repeat or recycle an earlier correction. If there is no meaningful new mistake, set "correction", "fix_said" and "fix_better" to null.
-- Write "say" so it flows naturally AFTER the correction — do NOT repeat the correction inside "say".`;
+- Write "say" so it flows naturally AFTER the correction — do NOT repeat the correction inside "say".
+- CRITICAL: after a correction, "say" must ALWAYS react briefly to what they told you and END WITH ONE natural follow-up question, so the student knows it is their turn — EXCEPT in a repeat-practice turn, where "say" ends with the invitation to repeat. Never leave "say" empty.`;
 
 // Anti-deriva: mantener a Lein consistente turno a turno (evita que "se vuelva
 // loco" tras varios turnos: re-saludar, repetir preguntas, cambiar de tema/nivel).
@@ -118,6 +119,7 @@ const LEIN_SCHEMA = {
     correction: { anyOf: [{ type: "string" }, { type: "null" }] },
     fix_said: { anyOf: [{ type: "string" }, { type: "null" }] },
     fix_better: { anyOf: [{ type: "string" }, { type: "null" }] },
+    repeat_target: { anyOf: [{ type: "string" }, { type: "null" }] },
     studentName: { anyOf: [{ type: "string" }, { type: "null" }] },
     suggestions: { type: "array", items: { type: "string" } },
     scene: { anyOf: [{ type: "string", enum: SCENE_KEYS }, { type: "null" }] },
@@ -131,7 +133,7 @@ const LEIN_SCHEMA = {
   },
   // studentName y correction son obligatorios (pueden ser null) para que el modelo
   // SIEMPRE los considere: así captura el nombre en cuanto lo oye y no lo omite.
-  required: ["say", "hint", "suggestions", "studentName", "correction", "fix_said", "fix_better"],
+  required: ["say", "hint", "suggestions", "studentName", "correction", "fix_said", "fix_better", "repeat_target"],
   additionalProperties: false,
 };
 
@@ -181,6 +183,28 @@ function correctionMatches(fixSaid, text) {
   const current = new Set(words(text));
   const hits = said.filter((w) => current.has(w)).length;
   return hits / said.length >= 0.6;
+}
+
+// Frases para invitar a repetir la forma correcta (varían para no sonar robot).
+const REPEAT_INVITES = [
+  "Your turn! Say it with me:",
+  "Let's practice it. Say it out loud:",
+  "Try it! Say:",
+  "Now you say it:",
+];
+
+// Quita de "say" las oraciones que repiten la corrección (ya se dice antes).
+function dropRepeatedCorrection(say, correction) {
+  const words = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9' ]+/g, " ").split(/\s+/).filter(Boolean);
+  const corr = new Set(words(correction));
+  const sentences = say.split(/(?<=[.!?])\s+/);
+  const kept = sentences.filter((s) => {
+    const w = words(s);
+    if (w.length < 4) return true;
+    const overlap = w.filter((x) => corr.has(x)).length / w.length;
+    return overlap < 0.6;
+  });
+  return kept.join(" ").trim() || say;
 }
 
 // Tema elegido por el alumno ("🎯 Tengo un tema"). Puede venir en español.
@@ -262,7 +286,12 @@ export async function leinTurn({ text, history = [], level = "A1", mission = nul
                  : (opening && !placement) ? openingMessage(level, studentName, returning)
                  : text;
   const messages = [
-    ...history.map((m) => ({ role: m.role, content: m.content })),
+    // Si en un turno anterior Lein corrigió algo, va como nota entre corchetes:
+    // así sabe que ya lo corrigió, sin "copiar" ese formato en su respuesta.
+    ...history.map((m) => ({
+      role: m.role,
+      content: m.role === "assistant" && m.correction ? `[Already corrected: ${m.correction}] ${m.content}` : m.content,
+    })),
     { role: "user", content: userText },
   ];
 
@@ -307,6 +336,27 @@ export async function leinTurn({ text, history = [], level = "A1", mission = nul
   if (data.correction && !opening && !recap && !placement && !correctionMatches(data.fix_said, text)) {
     console.log(`[correction] descartada (no está en este turno): "${data.fix_said}"`);
     data.correction = null; data.fix_said = null; data.fix_better = null;
+  }
+
+  // "say" limpio: sin notas entre corchetes copiadas del historial y sin repetir
+  // la corrección (si no, Lein la diría DOS veces en voz alta).
+  data.say = String(data.say || "").replace(/\[[^\]]*\]/g, " ").replace(/\s+/g, " ").trim();
+  if (data.correction) data.say = dropRepeatedCorrection(data.say, data.correction);
+
+  // "Repite la frase": solo en charla normal y solo junto a una corrección. Si
+  // la hay, "say" ES la invitación a repetir (antes a veces marcaba la frase
+  // pero preguntaba otra cosa, y el alumno no sabía qué hacer).
+  if (placement || recap || opening || !data.correction) data.repeat_target = null;
+  if (data.repeat_target) {
+    const target = String(data.repeat_target).replace(/["“”]/g, "").trim();
+    data.repeat_target = target;
+    data.say = REPEAT_INVITES[Math.floor(Math.random() * REPEAT_INVITES.length)] + ` "${target}"`;
+  }
+
+  // Blindaje: Lein nunca se queda callado después de corregir (antes podía
+  // dejar "say" vacío y el alumno no sabía que era su turno).
+  if (!placement && !recap && !data.say) {
+    data.say = "Tell me more! What else happened?";
   }
 
   // Adjuntamos uso de tokens (útil para vigilar costo en desarrollo).

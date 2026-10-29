@@ -146,7 +146,7 @@ function looksInvented(text, context) {
   const words = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9' ]+/g, " ").split(/\s+/).filter(Boolean);
   const said = words(t), ctx = new Set(words(context));
   if (said.length < 4 || !ctx.size) return false;
-  if (/\b(again|repeat)\b/i.test(context)) return false; // Lein pidió repetir: copiar es lo correcto
+  if (/\b(again|repeat|say it)\b/i.test(context)) return false; // Lein pidió repetir: copiar es lo correcto
   const copied = said.filter((w) => ctx.has(w)).length / said.length;
   return copied >= 0.85; // casi todo es copia de lo que acaba de decir Lein
 }
@@ -225,7 +225,8 @@ const server = http.createServer(async (req, res) => {
       // Con silencio o ruido, el "oído" a veces inventa texto (p. ej. "Thanks for
       // watching") o copia lo último que dijo Lein (que le damos de contexto).
       // Eso no lo dijo el alumno: lo tratamos como "no te escuché".
-      if (looksInvented(text, context)) {
+      const repeating = url.searchParams.get("repeat") === "1"; // el alumno repite la frase de Lein
+      if (!repeating && looksInvented(text, context)) {
         console.log(`[stt] descartado (parece inventado): "${text}"`);
         text = "";
       }
