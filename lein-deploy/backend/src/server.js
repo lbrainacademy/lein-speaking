@@ -16,7 +16,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { leinTurn, getModel } from "./lein.js";
 import { getStatus, addActiveSeconds, DAILY_LIMIT_SECONDS } from "./usage.js";
-import { synthesize, hasTTS, startJob, pipeJob, cleanForSpeech } from "./tts.js";
+import { synthesize, hasTTS, startJob, pipeJob, cleanForSpeech, ttsProvider, voiceOptions } from "./tts.js";
 import { transcribe, hasSTT } from "./stt.js";
 import { claudeCostUSD, ttsCostUSD, sttCostUSD, addCost, getDailyTotals, round4, today } from "./cost.js";
 
@@ -138,6 +138,19 @@ function renderCostsPage(t, key) {
 </div></body></html>`;
 }
 
+// ¿La transcripción parece inventada (silencio/ruido) en vez de dicha por el alumno?
+function looksInvented(text, context) {
+  const t = String(text || "").trim();
+  if (!t) return false;
+  if (/^(thanks for watching|thank you for watching)[.!]*$/i.test(t)) return true;
+  const words = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9' ]+/g, " ").split(/\s+/).filter(Boolean);
+  const said = words(t), ctx = new Set(words(context));
+  if (said.length < 4 || !ctx.size) return false;
+  if (/\b(again|repeat)\b/i.test(context)) return false; // Lein pidió repetir: copiar es lo correcto
+  const copied = said.filter((w) => ctx.has(w)).length / said.length;
+  return copied >= 0.85; // casi todo es copia de lo que acaba de decir Lein
+}
+
 function readBody(req) {
   return new Promise((resolve, reject) => {
     let data = "";
@@ -184,7 +197,8 @@ const server = http.createServer(async (req, res) => {
       model: getModel(),
       hasApiKey: Boolean(process.env.ANTHROPIC_API_KEY),
       dailyLimitMinutes: DAILY_LIMIT_SECONDS / 60,
-      ttsProvider: hasTTS() ? "openai" : "browser",
+      ttsProvider: ttsProvider() || "browser",
+      voices: voiceOptions(), // solo con ElevenLabs: [{id,label}] para el selector del chat
       sttProvider: hasSTT() ? "openai" : "none",
     });
   }
@@ -207,7 +221,14 @@ const server = http.createServer(async (req, res) => {
       const anyLanguage = url.searchParams.get("lang") === "auto"; // tema: puede venir en español
       let context = "";
       try { context = decodeURIComponent(req.headers["x-lein-context"] || ""); } catch {}
-      const text = await transcribe(buf, req.headers["content-type"], { anyLanguage, context });
+      let text = await transcribe(buf, req.headers["content-type"], { anyLanguage, context });
+      // Con silencio o ruido, el "oído" a veces inventa texto (p. ej. "Thanks for
+      // watching") o copia lo último que dijo Lein (que le damos de contexto).
+      // Eso no lo dijo el alumno: lo tratamos como "no te escuché".
+      if (looksInvented(text, context)) {
+        console.log(`[stt] descartado (parece inventado): "${text}"`);
+        text = "";
+      }
       // Medidor: costo (estimado) de la transcripción, atribuido al estudiante.
       const sid = url.searchParams.get("studentId") || "anon";
       addCost(sid, sttCostUSD(buf.length), "stt");

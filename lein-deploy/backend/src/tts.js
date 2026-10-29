@@ -17,14 +17,39 @@ const LEVEL_SPEED = {
   A1: 0.72, "A1+": 0.80, A2: 0.88, B1: 0.95, B2: 1.0, C1: 1.0, PLACEMENT: 0.9,
 };
 // Ritmo (en lenguaje natural) por nivel para el motor "gpt-4o-mini-tts".
+// Más despacio abajo, pero SIEMPRE con energía (antes sonaba lento y apagado).
 const LEVEL_PACE = {
-  A1: "slowly and very clearly", "A1+": "slowly and clearly", A2: "clearly",
-  B1: "at a natural conversational pace", B2: "at a natural conversational pace",
-  C1: "at a natural, lively pace", PLACEMENT: "clearly",
+  A1: "a little slower than normal conversation, with clear words, but keep the energy up",
+  "A1+": "a little slower than normal conversation, with clear words, but keep the energy up",
+  A2: "natural conversation, slightly unhurried, clear words",
+  B1: "natural conversation", B2: "natural conversation", C1: "natural, lively conversation",
+  PLACEMENT: "natural conversation, clear words",
 };
+// ElevenLabs: velocidad por nivel (rango permitido 0.7–1.2).
+const EL_SPEED = { A1: 0.9, "A1+": 0.93, A2: 0.97, B1: 1.0, B2: 1.0, C1: 1.03, PLACEMENT: 0.97 };
+// Voces de ElevenLabs que se ofrecen (nombre:id). Configurable con ELEVENLABS_VOICES.
+const EL_VOICES_DEFAULT = "Jessica:cgSgspJ2msm6clMCkdW9,Liam:TX3LPaxmHKxFdv7VOQHJ,Will:bIHbv24MWmeRgasZH58o";
+function elVoices() {
+  return (process.env.ELEVENLABS_VOICES || EL_VOICES_DEFAULT).split(",").map((s) => {
+    const [label, id] = s.split(":").map((x) => (x || "").trim());
+    return { id, label };
+  }).filter((v) => v.id);
+}
 
+// Proveedor de voz: ElevenLabs (más natural y rápida) si TTS_PROVIDER=elevenlabs
+// y hay ELEVENLABS_API_KEY; si no, OpenAI. Sin ninguna llave: voz del navegador.
+export function ttsProvider() {
+  if (process.env.TTS_PROVIDER === "elevenlabs" && process.env.ELEVENLABS_API_KEY) return "elevenlabs";
+  if (process.env.OPENAI_API_KEY) return "openai";
+  return null;
+}
 export function hasTTS() {
-  return Boolean(process.env.OPENAI_API_KEY);
+  return Boolean(ttsProvider());
+}
+// Voces que el alumno puede elegir dentro del chat (solo para ElevenLabs;
+// con OpenAI el frontend usa su propia lista).
+export function voiceOptions() {
+  return ttsProvider() === "elevenlabs" ? elVoices() : null;
 }
 
 // Limpia el texto antes de hablarlo: "Lein" se pronuncia "Lane", sin emojis ni
@@ -38,8 +63,31 @@ export function cleanForSpeech(t) {
     .trim();
 }
 
-// Arma el pedido a OpenAI y devuelve la respuesta HTTP (cuerpo sin leer).
+// ElevenLabs "flash": empieza a sonar en ~0,2–0,3 s (OpenAI tarda 1,2–1,7 s).
+async function requestElevenLabs(text, level, voiceOverride) {
+  const voices = elVoices();
+  const voice = voices.some((v) => v.id === voiceOverride) ? voiceOverride
+              : (process.env.ELEVENLABS_VOICE || voices[0]?.id);
+  const model = process.env.ELEVENLABS_MODEL || "eleven_flash_v2_5";
+  const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voice}/stream?output_format=mp3_44100_128`, {
+    method: "POST",
+    headers: { "xi-api-key": process.env.ELEVENLABS_API_KEY, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      text, model_id: model, language_code: "en",
+      voice_settings: { stability: 0.4, similarity_boost: 0.8, style: 0.35, use_speaker_boost: true, speed: EL_SPEED[level] || 1.0 },
+    }),
+    signal: AbortSignal.timeout(20000),
+  });
+  if (!res.ok) {
+    const detail = await res.text();
+    throw new Error(`ElevenLabs TTS ${res.status}: ${detail.slice(0, 200)}`);
+  }
+  return res;
+}
+
+// Arma el pedido de voz y devuelve la respuesta HTTP (cuerpo sin leer).
 async function requestSpeech(text, level = "A1", voiceOverride) {
+  if (ttsProvider() === "elevenlabs") return requestElevenLabs(text, level, voiceOverride);
   const voice = voiceOverride || process.env.TTS_VOICE || "coral";
   const model = process.env.TTS_MODEL || "gpt-4o-mini-tts"; // el más natural
 
@@ -48,9 +96,9 @@ async function requestSpeech(text, level = "A1", voiceOverride) {
     // Motor nuevo: el tono/ritmo se controla con "instructions" (no con speed).
     const pace = LEVEL_PACE[level] || "at a natural conversational pace";
     body.instructions =
-      `You are Lein, a warm, friendly, encouraging English tutor speaking to a student. ` +
-      `Use a natural, human, warm American accent — relaxed and conversational, never robotic or monotone. ` +
-      `Speak ${pace}. Sound kind, upbeat, and motivating.`;
+      `Voice: a friendly, upbeat American speaking partner in their late 20s, genuinely happy to chat. ` +
+      `Bright, warm and energetic, with natural ups and downs in intonation, like talking with a friend — smile while you speak. ` +
+      `Never monotone, flat, robotic, or announcer-like. Pace: ${pace}.`;
   } else {
     // Motor clásico tts-1/tts-1-hd: el ritmo se controla con "speed".
     body.speed = LEVEL_SPEED[level] || 0.95;
