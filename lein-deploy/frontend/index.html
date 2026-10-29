@@ -43,19 +43,16 @@
   .listening .mark{animation:breathe 2.4s ease-in-out infinite}
   .talking .mark{animation:talk .5s ease-in-out infinite}
   @keyframes talk{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
-  .mark svg{width:100%;height:100%;filter:drop-shadow(0 0 22px rgba(255,140,66,.55))}
-  .talking .mark svg{filter:drop-shadow(0 0 34px rgba(255,170,80,.8))}
+  .mark svg{width:100%;height:100%;filter:drop-shadow(0 2px 6px rgba(0,0,0,.45))}
   /* Neuronas del cerebro: apagadas por defecto, se encienden con la práctica */
   .neuron{fill:#5e3a22;opacity:.5;transition:fill .6s ease, opacity .6s ease}
-  .neuron.lit{fill:#FFE6A6;opacity:1;filter:drop-shadow(0 0 5px rgba(255,228,150,.95))}
-  .chatAvatar .neuron.lit{animation:neuronPulse 2.2s ease-in-out infinite}
-  @keyframes neuronPulse{0%,100%{opacity:.8}50%{opacity:1}}
+  .neuron.lit{fill:#FFE6A6;opacity:1}
   .chatAvatar.celebrate .mark{animation:brainPop .65s ease}
   @keyframes brainPop{0%,100%{transform:scale(1)}40%{transform:scale(1.13)}}
   /* Aviso flotante de logro */
   .toast{position:fixed;left:50%;top:74px;transform:translateX(-50%) translateY(-12px);
     background:rgba(255,140,66,.95);color:#1a120a;font-family:'Sora',sans-serif;font-weight:600;
-    font-size:16px;padding:11px 20px;border-radius:999px;box-shadow:0 10px 30px rgba(255,140,66,.5);
+    font-size:16px;padding:11px 20px;border-radius:999px;box-shadow:0 6px 16px rgba(0,0,0,.35);
     opacity:0;pointer-events:none;transition:opacity .3s, transform .3s;z-index:60}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
   .eq{position:absolute;bottom:-2px;display:flex;gap:4px;height:20px;align-items:flex-end;opacity:0;transition:opacity .25s}
@@ -67,20 +64,9 @@
   @keyframes bar{0%,100%{height:6px}50%{height:18px}}
 
   /* ---------- Marca ---------- */
-  .name h1{font-family:'Sora',sans-serif;font-weight:700;font-size:46px;letter-spacing:-1px;
-    background:linear-gradient(120deg,var(--yellow),var(--orange));-webkit-background-clip:text;
-    background-clip:text;-webkit-text-fill-color:transparent;line-height:1}
+  .name h1{font-family:'Sora',sans-serif;font-weight:700;font-size:46px;letter-spacing:-1px;color:#FFB05A;line-height:1.1}
   .name p{margin-top:9px;font-size:14px;letter-spacing:3px;text-transform:uppercase;color:#9a8a7a;font-weight:500}
   .lead{max-width:420px;color:#cdbfb0;font-size:21px;line-height:1.55}
-  /* ---- Bienvenida futurista ---- */
-  .orbs{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0}
-  .orbs span{position:absolute;border-radius:50%;filter:blur(70px);opacity:.5;animation:drift 16s ease-in-out infinite}
-  .orbs span:nth-child(1){width:320px;height:320px;background:#FF8C42;top:-70px;left:-50px}
-  .orbs span:nth-child(2){width:280px;height:280px;background:#E5631C;bottom:-60px;right:-40px;animation-delay:-5s}
-  .orbs span:nth-child(3){width:240px;height:240px;background:#FFC83D;top:42%;left:58%;animation-delay:-10s}
-  .orbs span:nth-child(4){width:210px;height:210px;background:#FFB05A;top:6%;right:10%;animation-delay:-13s}
-  @keyframes drift{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(45px,-35px) scale(1.12)}66%{transform:translate(-35px,25px) scale(.92)}}
-  #welcome > *:not(.orbs){position:relative;z-index:1}
   .hero-title{font-family:'Sora',sans-serif;font-weight:700;font-size:36px;line-height:1.15;letter-spacing:-1px}
   /* Barra de progreso del cerebro (se va llenando con la práctica) */
   .brainbar-wrap{display:flex;flex-direction:column;align-items:center;gap:7px}
@@ -89,49 +75,40 @@
     border:1px solid rgba(255,140,66,.3);overflow:hidden}
   .brainbar-fill{height:100%;width:0%;border-radius:999px;
     background:linear-gradient(90deg,var(--yellow),var(--orange),var(--deep));
-    box-shadow:0 0 16px rgba(255,150,70,.75);transition:width .7s cubic-bezier(.2,.7,.3,1)}
-  .go.pulse{animation:cta 1.5s ease-in-out infinite}
-  @keyframes cta{0%,100%{box-shadow:0 12px 30px rgba(255,140,66,.4);transform:scale(1)}
-                 50%{box-shadow:0 16px 56px rgba(255,178,88,.92);transform:scale(1.05)}}
+    transition:width .7s cubic-bezier(.2,.7,.3,1)}
   /* avatar de inicio siempre "vivo" con anillos suaves */
-  .stage.hero .ring{animation:pin 2.8s ease-out infinite}
-  .stage.hero .ring:nth-child(2){animation-delay:.95s}
-  .stage.hero .ring:nth-child(3){animation-delay:1.9s}
   /* Entrada en cascada del inicio (cae y se asienta) */
   @keyframes dropIn{0%{opacity:0;transform:translateY(-26px) scale(.94)}
                     70%{opacity:1;transform:translateY(4px) scale(1.01)}
                     100%{opacity:1;transform:translateY(0) scale(1)}}
   /* El título cae palabra por palabra (con rebote divertido) */
   .hero-title .w{display:inline-block;opacity:0;transform:translateY(-46px) rotate(-7deg);
-    background:linear-gradient(120deg,#ffffff,#ffd9a8);-webkit-background-clip:text;background-clip:text;
-    -webkit-text-fill-color:transparent;color:#fff}
+    color:#f6eee6}
   .hero-title .w.drop{animation:wordDrop .55s cubic-bezier(.2,1.5,.45,1) forwards}
   @keyframes wordDrop{0%{opacity:0;transform:translateY(-46px) rotate(-7deg)}
                       65%{opacity:1;transform:translateY(7px) rotate(2deg)}
                       100%{opacity:1;transform:translateY(0) rotate(0)}}
   /* El resto entra después de que cae el título */
-  #welcome.active .stage{animation:dropIn .6s ease 1.5s backwards}
-  #welcome.active .name{animation:dropIn .5s ease 1.75s backwards}
-  #welcome.active #brainWrap{animation:dropIn .5s ease 1.9s backwards}
-  /* el botón entra y LUEGO se queda titilando para siempre */
-  #welcome.active #startBtn{animation:dropIn .5s ease 2.05s backwards, cta 1.4s ease-in-out 2.6s infinite}
-  #welcome.active .voicepick{animation:dropIn .5s ease 2.2s backwards}
+  /* Entrada rápida: el botón está listo en menos de 1 segundo */
+  #welcome.active .stage{animation:dropIn .5s ease .15s backwards}
+  #welcome.active .name{animation:dropIn .4s ease .3s backwards}
+  #welcome.active #brainWrap{animation:dropIn .4s ease .4s backwards}
+  #welcome.active #startBtn{animation:dropIn .4s ease .5s backwards}
+  #welcome.active #welcomeMore{animation:dropIn .4s ease .6s backwards}
   /* Cerebro Lein grande al centro */
   .stage.hero.big{width:300px;height:300px}
   .stage.hero.big .mark{width:218px;height:218px}
   .stage.hero.big .ring{width:252px;height:252px}
   /* Cerebro en la pantalla de niveles (con glow y anillos, como los demás) */
   .stage.hero.levelhero{width:150px;height:150px;position:relative}
-  .stage.hero.levelhero::before{content:"";position:absolute;width:190px;height:190px;border-radius:50%;
-    background:radial-gradient(circle, rgba(255,140,66,0) 40%, rgba(255,150,70,.2) 56%, rgba(255,140,66,0) 76%)}
   .stage.hero.levelhero .mark{width:112px;height:112px;position:relative;z-index:2}
-  .stage.hero.levelhero .mark svg{filter:drop-shadow(0 2px 4px rgba(0,0,0,.6)) drop-shadow(0 0 16px rgba(255,175,75,.55))}
+  .stage.hero.levelhero .mark svg{filter:drop-shadow(0 2px 4px rgba(0,0,0,.5))}
   .stage.hero.levelhero .ring{width:132px;height:132px}
 
   /* ---------- Botones ---------- */
   .go{border:none;cursor:pointer;font-family:'Sora',sans-serif;font-weight:600;font-size:23px;
     color:#1a120a;background:linear-gradient(120deg,var(--yellow),var(--orange));
-    padding:20px 52px;border-radius:999px;box-shadow:0 12px 30px rgba(255,140,66,.4);transition:transform .15s}
+    padding:20px 38px;white-space:nowrap;border-radius:999px;box-shadow:0 6px 16px rgba(0,0,0,.3);transition:transform .15s}
   .go:active{transform:scale(.95)}
   .levels{display:grid;grid-template-columns:1fr 1fr;gap:14px;width:100%;max-width:480px;perspective:1000px}
   .levels button{display:flex;align-items:center;justify-content:center;text-align:center;
@@ -142,7 +119,7 @@
     transition:transform .18s ease, background .18s, box-shadow .18s, border-color .18s}
   .levels button:hover{transform:translateY(-6px) scale(1.04);
     background:linear-gradient(160deg, rgba(255,140,66,.30), rgba(255,140,66,.10));
-    border-color:#FFB05A;box-shadow:0 20px 42px rgba(255,140,66,.45)}
+    border-color:#FFB05A;box-shadow:0 10px 24px rgba(0,0,0,.35)}
   .levels button:active{transform:scale(.97)}
   .levels button.full{grid-column:1/-1;min-height:74px;font-size:18px;
     background:linear-gradient(160deg, rgba(255,140,66,.20), rgba(255,140,66,.06));padding:18px}
@@ -183,45 +160,54 @@
   .topbar .mini{width:44px;height:44px;flex:0 0 44px}
   .topbar .who{font-family:'Sora',sans-serif;font-weight:600;font-size:23px;line-height:1}
   .topbar .lvl{font-size:14px;color:#9a8a7a;margin-top:4px}
-  .timepill{margin-left:auto;font-size:17px;color:#cdbfb0;background:rgba(255,255,255,.06);
-    border:1px solid rgba(255,140,66,.2);padding:8px 14px;border-radius:999px;white-space:nowrap}
+  .timepill{margin-left:auto;font-size:15px;color:#9a8a7a;font-variant-numeric:tabular-nums;padding:6px 4px;
+    white-space:nowrap;transition:opacity .3s}
+  .timepill.paused{opacity:.45}
+  .textpill{flex:0 0 auto;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;color:#cdbfb0;
+    background:transparent;border:1px solid rgba(255,255,255,.18);padding:8px 12px;border-radius:999px;white-space:nowrap}
+  .textpill[aria-pressed="true"]{color:#1a120a;background:#FFB05A;border-color:#FFB05A}
+  .topbar .iconbtn{width:40px;height:40px;flex:0 0 40px;font-size:17px}
   .meterpill{margin-left:8px;font-size:14px;color:#8fe39a;background:rgba(80,200,120,.10);
     border:1px solid rgba(80,200,120,.30);padding:7px 11px;border-radius:999px;white-space:nowrap;font-variant-numeric:tabular-nums}
   .feed{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:22px 18px;display:flex;flex-direction:column;gap:18px}
-  .bubble{max-width:90%;padding:17px 20px;border-radius:22px;font-size:24px;line-height:1.5;word-wrap:break-word}
+  .bubble{max-width:88%;padding:13px 17px;border-radius:20px;font-size:21px;line-height:1.45;word-wrap:break-word}
+  .bubble.voiceonly{cursor:pointer;color:#b8a795;font-size:17px;padding:11px 16px;background:rgba(255,255,255,.04)}
+  .undo{align-self:flex-end;margin-top:-12px;background:none;border:none;color:#9a8a7a;font-family:inherit;
+    font-size:14px;cursor:pointer;padding:4px 2px;text-decoration:underline;text-underline-offset:3px}
   .lein{align-self:flex-start;background:rgba(255,255,255,.07);border:1px solid rgba(255,140,66,.18);border-bottom-left-radius:6px}
   .me{align-self:flex-end;background:linear-gradient(120deg,var(--orange),var(--deep));color:#1a120a;border-bottom-right-radius:6px;font-weight:500}
   .bubble.listen{color:#b8a795;font-style:italic;background:rgba(255,255,255,.04);border-style:dashed}
-  .hint{align-self:flex-start;max-width:90%;font-size:20px;color:#ffd9a8;background:rgba(255,140,66,.1);
-    border:1px dashed rgba(255,140,66,.35);padding:14px 18px;border-radius:14px;line-height:1.45}
+  .hint{align-self:flex-start;max-width:88%;font-size:17px;color:#ffd9a8;background:rgba(255,140,66,.08);
+    border-left:3px solid rgba(255,140,66,.6);padding:9px 14px;border-radius:4px 12px 12px 4px;line-height:1.45}
+  #feed.voiceonly .hint{display:none}
   /* Corrección suave (nota visible, color distinto a la pista) */
-  .correction{align-self:flex-start;max-width:90%;font-size:19px;color:#bfe6ff;background:rgba(90,160,220,.12);
-    border:1px dashed rgba(130,185,235,.5);padding:13px 17px;border-radius:14px;line-height:1.45}
-  .ideas-label{align-self:flex-start;font-size:14.5px;color:#9a8a7a;margin-bottom:-6px}
+  .correction{align-self:flex-start;max-width:88%;font-size:17px;color:#d8ecfb;background:rgba(90,160,220,.09);
+    border-left:3px solid #7fb6e6;padding:9px 14px;border-radius:4px 12px 12px 4px;line-height:1.45}
+  .ideas-label{align-self:flex-start;font-size:14px;color:#9a8a7a;margin-bottom:-8px}
   .row-actions{align-self:flex-start;display:flex;gap:10px;flex-wrap:wrap;margin-top:-4px}
-  .chip{cursor:pointer;font-size:20px;color:#f3ece4;background:rgba(255,255,255,.06);
-    border:1px solid rgba(255,140,66,.3);padding:14px 20px;border-radius:999px;transition:.12s}
+  .chip{cursor:pointer;font-size:17px;font-family:inherit;color:#f3ece4;background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,140,66,.3);padding:11px 16px;border-radius:999px;transition:.12s}
   .chip:active{transform:scale(.95);background:rgba(255,140,66,.2)}
   .speakbtn{cursor:pointer;background:rgba(255,255,255,.06);border:1px solid rgba(255,140,66,.25);
     color:#cdbfb0;border-radius:999px;padding:9px 15px;font-size:16px;align-self:flex-start}
-  .typing{align-self:flex-start;color:#9a8a7a;font-size:19px;font-style:italic}
+  .typing{align-self:flex-start;display:flex;gap:6px;padding:16px 18px;border-radius:18px;background:rgba(255,255,255,.06)}
+  .typing i{width:8px;height:8px;border-radius:50%;background:#9a8a7a;animation:dot 1.2s ease-in-out infinite}
+  .typing i:nth-child(2){animation-delay:.15s}
+  .typing i:nth-child(3){animation-delay:.3s}
+  @keyframes dot{0%,60%,100%{opacity:.35;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
   /* Botón de atrás */
   .backbtn{flex:0 0 auto;width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,140,66,.3);
     background:rgba(255,255,255,.06);color:#f3ece4;font-size:24px;cursor:pointer;display:grid;
     place-items:center;line-height:1;padding:0}
   .backbtn:active{transform:scale(.92)}
   /* Lein animado dentro del chat (reposo / escuchando / hablando) */
-  .chatAvatar{width:100%;height:212px;flex:0 0 auto;display:grid;place-items:center;position:relative;
+  .chatAvatar{width:100%;height:170px;flex:0 0 auto;display:grid;place-items:center;position:relative;
     border-bottom:1px solid rgba(255,255,255,.05)}
   /* Halo SOLO en el borde (centro transparente) para no tapar al cerebrito */
-  .chatAvatar::before{content:"";position:absolute;width:270px;height:270px;border-radius:50%;
-    background:radial-gradient(circle, rgba(255,140,66,0) 40%, rgba(255,150,70,.16) 56%, rgba(255,140,66,0) 76%)}
-  .chatAvatar.listening::before,.chatAvatar.talking::before{background:radial-gradient(circle, rgba(255,170,80,0) 40%, rgba(255,185,95,.26) 56%, rgba(255,140,66,0) 76%)}
-  .chatAvatar .mark{width:152px;height:152px;position:relative;z-index:2}
+  .chatAvatar .mark{width:118px;height:118px;position:relative;z-index:2}
   /* Borde oscuro + brillo: separa al cerebrito del fondo y lo hace nítido */
-  .chatAvatar .mark svg{filter:drop-shadow(0 2px 4px rgba(0,0,0,.65)) drop-shadow(0 0 16px rgba(255,175,75,.5))}
-  .chatAvatar.listening .mark svg,.chatAvatar.talking .mark svg{filter:drop-shadow(0 2px 4px rgba(0,0,0,.65)) drop-shadow(0 0 28px rgba(255,195,105,.8))}
-  .chatAvatar .ring{width:184px;height:184px;border-color:rgba(255,160,80,.5);z-index:1}
+  .chatAvatar .mark svg{filter:drop-shadow(0 2px 4px rgba(0,0,0,.5))}
+  .chatAvatar .ring{width:146px;height:146px;border-width:1px;border-color:rgba(255,160,80,.35);z-index:1}
   .chatAvatar .eq{bottom:20px;z-index:3}
   /* En pantallas bajas (celulares), achicar el avatar del chat para que la barra del micrófono siempre se vea */
   @media (max-height:720px){
@@ -232,7 +218,9 @@
   }
   .composer{display:flex;gap:10px;padding:14px 16px;padding-bottom:calc(14px + env(safe-area-inset-bottom));border-top:1px solid rgba(255,255,255,.07);align-items:center;flex:0 0 auto}
   .composer input{flex:1;min-width:0;background:rgba(255,255,255,.07);border:1px solid rgba(255,140,66,.25);
-    color:#f3ece4;font-size:21px;font-family:inherit;padding:18px 21px;border-radius:999px;outline:none}
+    color:#f3ece4;font-size:18px;font-family:inherit;padding:16px 20px;border-radius:999px;outline:none}
+  .composer #sendBtn{background:rgba(255,255,255,.1);color:#f3ece4;width:52px;height:52px;font-size:20px}
+  .composer #sendBtn.hide{display:none}
   .composer input::placeholder{color:#8a7c6e}
   .composer button{flex:0 0 auto;border:none;cursor:pointer;background:linear-gradient(120deg,var(--yellow),var(--orange));
     color:#1a120a;font-size:24px;width:62px;height:62px;border-radius:50%;display:grid;place-items:center}
@@ -250,9 +238,82 @@
   .micstatus.show{display:block}
   .micstatus .actbtn{margin-left:8px;background:var(--orange);color:#1a120a;border:none;border-radius:999px;
     padding:7px 14px;font-weight:600;cursor:pointer;font-family:inherit;font-size:14px}
-  .blocked{position:fixed;inset:0;background:rgba(20,16,25,.92);display:none;flex-direction:column;
-    align-items:center;justify-content:center;gap:18px;padding:32px;text-align:center;z-index:50}
+  .blocked{position:fixed;inset:0;background:var(--bg);display:none;flex-direction:column;
+    align-items:center;justify-content:safe center;gap:18px;padding:28px 18px;text-align:center;z-index:50;overflow-y:auto}
   .blocked.active{display:flex}
+
+  /* ---------- Nuevos: entrada, tema, corrección, cierre ---------- */
+  .topbar{gap:8px;padding:12px 14px}
+  .topbar .whobox{min-width:0;flex:1 1 auto}
+  .topbar .lvl{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* Estado grande bajo Lein: pensando / hablando / tu turno */
+  .chatAvatar{height:196px}
+  .chatAvatar .eq{bottom:44px}
+  .leinstatus{position:absolute;left:12px;right:12px;bottom:10px;text-align:center;font-family:'Sora',sans-serif;
+    font-size:20px;font-weight:600;color:#f3ece4;z-index:3;min-height:26px;line-height:1.3}
+  .leinstatus.wait{color:#FFC83D}
+  @media (max-height:720px){
+    .chatAvatar{height:150px}
+    .chatAvatar .eq{display:none}
+    .leinstatus{font-size:18px;bottom:4px}
+  }
+  /* "Tu turno": el micrófono crece suave y lanza una onda, para que sepan que deben tocarlo */
+  .micbtn{position:relative}
+  .micbtn.yourturn{animation:micnudge 1.6s ease-in-out infinite}
+  .micbtn.yourturn::after{content:"";position:absolute;inset:-5px;border-radius:50%;border:3px solid #FFB05A;
+    animation:micring 1.6s ease-out infinite;pointer-events:none}
+  .micbtn.yourturn.tip::before{content:"Tócalo y habla";position:absolute;bottom:calc(100% + 14px);right:-2px;
+    white-space:nowrap;background:#FFB05A;color:#1a120a;font-family:'DM Sans',sans-serif;font-size:16px;font-weight:600;
+    padding:8px 14px;border-radius:14px 14px 4px 14px;box-shadow:0 4px 12px rgba(0,0,0,.35);pointer-events:none}
+  @keyframes micnudge{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+  @keyframes micring{0%{transform:scale(1);opacity:.9}100%{transform:scale(1.7);opacity:0}}
+  @media (prefers-reduced-motion: reduce){ .micbtn.yourturn,.micbtn.yourturn::after{animation:none} }
+  .typing{align-items:center}
+  .typing span{margin-left:6px;font-size:18px;color:#cdbfb0}
+  .welcome-more{display:none;flex-direction:column;align-items:center;gap:12px}
+  .ghostbtn{font-family:'Sora',sans-serif;font-weight:600;font-size:19px;color:#f3ece4;background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,140,66,.45);padding:15px 30px;border-radius:999px;cursor:pointer}
+  .ghostbtn:active{transform:scale(.96)}
+  .modecard{align-self:stretch;display:flex;flex-direction:column;gap:12px}
+  .mc-title{font-family:'Sora',sans-serif;font-size:21px;font-weight:600;text-align:center;margin-bottom:2px}
+  .modebtn{display:flex;align-items:center;justify-content:center;gap:10px;padding:22px 20px;border-radius:18px;cursor:pointer;
+    border:1px solid rgba(255,140,66,.35);background:rgba(255,255,255,.05);color:#f3ece4;font-family:inherit}
+  .modebtn b{font-size:22px;font-weight:600}
+  .modebtn span{font-size:16px;color:#b8a795}
+  .modebtn.primary{background:rgba(255,140,66,.16);border-color:#FF8C42}
+  .modebtn:active{transform:scale(.98)}
+  .note{align-self:stretch;font-size:19px;line-height:1.45;color:#f3ece4;background:rgba(255,255,255,.05);
+    border:1px solid rgba(255,140,66,.3);padding:14px 18px;border-radius:14px}
+  .note .link{display:inline-block;margin-top:8px;font-size:15px}
+  .topicchip{align-self:center;font-size:15px;color:#ffd9a8;background:rgba(255,140,66,.12);
+    border:1px solid rgba(255,140,66,.3);padding:6px 14px;border-radius:999px;max-width:90%}
+  .correction .ct{font-weight:600}
+  .correction .said{color:#d6c7b8}
+  .correction .better{color:#fff;font-weight:600}
+  .minispeak{margin-left:8px;border:1px solid rgba(130,185,235,.5);background:rgba(90,160,220,.18);color:#e6f4ff;
+    border-radius:999px;padding:5px 12px;font-size:15px;cursor:pointer;font-family:inherit;vertical-align:middle}
+  .retrybtn{align-self:flex-start;cursor:pointer;font-family:inherit;font-size:18px;color:#1a120a;background:#FFB05A;
+    border:none;border-radius:14px;padding:13px 18px;text-align:left}
+  .voicesheet{display:none;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center;padding:10px 14px;
+    border-bottom:1px solid rgba(255,255,255,.07)}
+  .voicesheet.show{display:flex}
+  .voicesheet .vs-label{width:100%;text-align:center;font-size:15px;color:#b8a795}
+  .voicesheet button{font-family:inherit;font-size:16px;cursor:pointer;background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,140,66,.3);color:#f3ece4;padding:9px 16px;border-radius:999px}
+  .voicesheet button.sel{background:var(--orange);border-color:var(--orange);color:#1a120a;font-weight:600}
+  .voicesheet button.loading{opacity:.55}
+  .sumcard{width:100%;max-width:460px;display:flex;flex-direction:column;align-items:center;gap:16px}
+  .sum-title{font-family:'Sora',sans-serif;font-size:27px;font-weight:700}
+  .sum-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%}
+  .sum-stat{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:14px 8px}
+  .sum-stat .n{font-family:'Sora',sans-serif;font-size:30px;font-weight:700;color:#FFC83D}
+  .sum-stat .k{font-size:14px;color:#b8a795;margin-top:4px;line-height:1.3}
+  .sum-sub{align-self:flex-start;font-size:15px;color:#9a8a7a;text-transform:uppercase;letter-spacing:1.5px}
+  .fixlist{list-style:none;width:100%;display:flex;flex-direction:column;gap:8px;text-align:left}
+  .fixlist li{background:rgba(80,200,120,.10);border:1px solid rgba(80,200,120,.35);border-radius:12px;padding:11px 14px}
+  .fixlist .ok{color:#8fe39a;font-weight:600;font-size:18px}
+  .fixlist .was{display:block;color:#9a8a7a;font-size:14px;margin-top:2px}
+  .fixlist li.none{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.1);color:#cdbfb0}
 </style>
 </head>
 <body>
@@ -297,7 +358,6 @@
 
   <!-- ====== Pantalla 1: Bienvenida ====== -->
   <section class="screen active" id="welcome">
-    <div class="orbs"><span></span><span></span><span></span><span></span></div>
     <h2 class="hero-title" id="heroTitle"><span class="w">Tu</span> <span class="w">cerebro</span> <span class="w">y</span> <span class="w">boca</span><br><span class="w">hablan</span> <span class="w">aquí</span></h2>
     <div class="stage hero big" id="stageWelcome">
       <div class="ring"></div><div class="ring"></div><div class="ring"></div>
@@ -309,19 +369,12 @@
       <div class="brainbar-label">Tu cerebro</div>
       <div class="brainbar"><div class="brainbar-fill" id="brainFill"></div></div>
     </div>
-    <button class="go pulse" id="startBtn">▶ ¡Empezar!</button>
-    <p class="lead" style="font-size:14px;color:#8a7c6e" id="browserWarn"></p>
-    <div class="voicepick" id="voicePick">
-      <div class="vp-label">🔊 Elige la voz de Lein (tócala para oírla):</div>
-      <div class="vp-row">
-        <button data-voice="onyx">Onyx ♂</button>
-        <button data-voice="echo">Echo ♂</button>
-        <button data-voice="fable">Fable ♂ 🇬🇧</button>
-        <button data-voice="ash">Ash ♂</button>
-        <button data-voice="nova">Nova ♀</button>
-        <button data-voice="shimmer">Shimmer ♀</button>
-      </div>
+    <button class="go" id="startBtn">▶ ¡Empezar!</button>
+    <div class="welcome-more" id="welcomeMore">
+      <button class="ghostbtn" id="topicBtnWelcome">🎯 Tengo un tema</button>
+      <button class="link" id="changeLevelBtn">Cambiar nivel</button>
     </div>
+    <p class="lead" style="font-size:14px;color:#8a7c6e" id="browserWarn"></p>
   </section>
 
   <!-- ====== Pantalla 2: Elegir nivel ====== -->
@@ -348,36 +401,57 @@
   <section id="chat">
     <div class="topbar">
       <button class="backbtn" id="backBtn" title="Atrás" aria-label="Atrás">←</button>
-      <div>
+      <div class="whobox">
         <div class="who">Lein</div>
         <div class="lvl" id="levelLabel">A1</div>
       </div>
-      <div class="timepill" id="timePill">10:00</div>
+      <div class="timepill" id="timePill" title="Tu tiempo de práctica de hoy. Se pausa cuando no estás practicando.">10:00</div>
+      <button id="textBtn" class="textpill" aria-pressed="true" title="Mostrar u ocultar el texto de Lein">Texto: Sí</button>
+      <button id="voiceBtn" class="backbtn iconbtn" title="Cambiar la voz de Lein" aria-label="Cambiar la voz de Lein" style="display:none">🔊</button>
       <div class="meterpill" id="meterPill" title="Costo de esta sesión (solo para el dueño)" style="display:none">💲—</div>
       <button id="devRecap" class="backbtn" title="Probar repaso (solo pruebas)" style="display:none;width:42px;height:42px;font-size:17px;margin-left:8px">↻</button>
+    </div>
+    <div class="voicesheet" id="voiceSheet">
+      <div class="vs-label">Elige la voz de Lein (tócala para oírla):</div>
+      <button data-voice="shimmer">Shimmer ♀</button>
+      <button data-voice="nova">Nova ♀</button>
+      <button data-voice="coral">Coral ♀</button>
+      <button data-voice="ash">Ash ♂</button>
+      <button data-voice="echo">Echo ♂</button>
+      <button data-voice="onyx">Onyx ♂</button>
     </div>
     <div class="chatAvatar stage" id="stageChat">
       <div class="ring"></div><div class="ring"></div><div class="ring"></div>
       <div class="mark"></div>
       <div class="eq"><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="leinstatus" id="leinStatus" aria-live="polite"></div>
     </div>
     <div class="feed" id="feed"></div>
     <div class="micstatus" id="micStatus"></div>
     <div class="composer">
       <input id="input" type="text" placeholder="Toca el micro y habla 🎤  (o escribe)" autocomplete="off" autocapitalize="sentences">
       <button id="micBtn" class="micbtn" title="Hablar">🎤</button>
-      <button id="sendBtn" title="Enviar">➤</button>
+      <button id="sendBtn" class="hide" title="Enviar" aria-label="Enviar">➤</button>
     </div>
   </section>
 
   <!-- Aviso flotante (logros del cerebro) -->
   <div class="toast" id="toast"></div>
 
-  <!-- ====== Overlay: tope alcanzado ====== -->
+  <!-- ====== Cierre: resumen del día (al llegar al tope) ====== -->
   <div class="blocked" id="blockedOverlay">
-    <div class="stage"><div class="mark"></div></div>
-    <div class="name"><h1 style="font-size:24px">¡Buen trabajo hoy!</h1></div>
-    <p class="lead" id="blockedMsg">Llegaste a tu práctica de hoy. ¡Nos vemos mañana! 👋</p>
+    <div class="sumcard">
+      <div class="stage" style="width:130px;height:130px"><div class="mark" style="width:110px;height:110px"></div></div>
+      <h2 class="sum-title" id="sumTitle">¡Buen trabajo hoy!</h2>
+      <div class="sum-stats">
+        <div class="sum-stat"><div class="n" id="sumPhrases">0</div><div class="k">frases que dijiste hoy</div></div>
+        <div class="sum-stat"><div class="n" id="sumFixes">0</div><div class="k">correcciones aprendidas</div></div>
+        <div class="sum-stat"><div class="n" id="sumDays">1</div><div class="k">días seguidos practicando</div></div>
+      </div>
+      <div class="sum-sub">Lo que aprendiste hoy</div>
+      <ul class="fixlist" id="sumList"></ul>
+      <p class="lead" id="blockedMsg">Tu práctica de hoy terminó. ¡Nos vemos mañana! 👋</p>
+    </div>
   </div>
 
 <script>
@@ -395,15 +469,28 @@
   const NAME_KEY = "lein_name_" + STUDENT_ID;
   let knownName = STUDENT_NAME || localStorage.getItem(NAME_KEY) || "";
   if (knownName) localStorage.setItem(NAME_KEY, knownName);
+  // Nivel recordado (elegido o descubierto en la ubicación): quien vuelve entra con 1 toque.
+  const LEVEL_KEY = "lein_level_" + STUDENT_ID;
+  let savedLevel = URL_LEVEL || localStorage.getItem(LEVEL_KEY) || "";
+  function saveLevel(l){ savedLevel = l; try{ localStorage.setItem(LEVEL_KEY, l); }catch(e){} }
+  // Celulares: el micrófono se suelta después de cada turno (en iPhone, con el
+  // micro abierto la voz de Lein sale bajita por el auricular). En compu se deja
+  // abierto toda la sesión: un solo permiso y arranca a grabar al instante.
+  const IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const MOBILE = IOS || /Android|Mobi/i.test(navigator.userAgent);
+
+  // fetch con tiempo máximo (si el servidor se cuelga, no nos quedamos esperando).
+  function fetchT(url, opts, ms){
+    const ctrl = new AbortController();
+    const to = setTimeout(()=>ctrl.abort(), ms || 20000);
+    return fetch(url, Object.assign({}, opts, { signal: ctrl.signal })).finally(()=>clearTimeout(to));
+  }
 
   // ---- "Enciende tu cerebro": el cerebrito se enciende con la práctica ----
   const BRAIN_KEY = "lein_brain_" + STUDENT_ID;
   let brainPower = Number(localStorage.getItem(BRAIN_KEY) || 0);
   const NEURONS = 10, PER_NEURON = 3; // ~3 turnos hablados encienden 1 neurona
   function litCount(){ return Math.max(0, Math.min(NEURONS, Math.floor(brainPower / PER_NEURON))); }
-  function brainStage(lit){
-    return lit>=10?"Genio": lit>=8?"Brillante": lit>=6?"Encendido": lit>=4?"Conectado": lit>=2?"Despierto":"Chispa";
-  }
   function renderBrain(){
     const lit = litCount();
     document.querySelectorAll(".neuron").forEach(n=>{
@@ -434,6 +521,39 @@
     }
   }
 
+  // ---- Progreso del día (para la tarjeta de cierre) y días seguidos ----
+  function dayStr(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+  const DAYS_KEY = "lein_days_" + STUDENT_ID;
+  const dayKey = ()=> "lein_day_" + STUDENT_ID + "_" + dayStr(new Date());
+  function loadDay(){
+    try{ const d = JSON.parse(localStorage.getItem(dayKey()) || "null"); if(d && Array.isArray(d.fixes)) return d; }catch(e){}
+    return { phrases:0, fixes:[] };
+  }
+  function saveDay(d){ try{ localStorage.setItem(dayKey(), JSON.stringify(d)); }catch(e){} }
+  function markPracticedToday(){
+    try{
+      const days = JSON.parse(localStorage.getItem(DAYS_KEY) || "[]");
+      const today = dayStr(new Date());
+      if(!days.includes(today)){ days.push(today); localStorage.setItem(DAYS_KEY, JSON.stringify(days.slice(-90))); }
+    }catch(e){}
+  }
+  function streakDays(){
+    let days = [];
+    try{ days = JSON.parse(localStorage.getItem(DAYS_KEY) || "[]"); }catch(e){}
+    const set = new Set(days);
+    const d = new Date();
+    if(!set.has(dayStr(d))) d.setDate(d.getDate()-1); // aún no practica hoy: contar hasta ayer
+    let n = 0;
+    while(set.has(dayStr(d))){ n++; d.setDate(d.getDate()-1); }
+    return n;
+  }
+  function countPhrase(){ const d = loadDay(); d.phrases++; saveDay(d); markPracticedToday(); }
+  function saveFix(fix){
+    const d = loadDay();
+    if(!d.fixes.some(f => (f.better||f.text) === (fix.better||fix.text))) d.fixes.push(fix);
+    saveDay(d);
+  }
+
   // Velocidad de voz por nivel (del documento de arranque).
   const VOICE_RATE = { "A1":0.72, "A1+":0.80, "A2":0.88, "B1":0.95, "B2":1.0, "C1":1.0, "PLACEMENT":0.85 };
 
@@ -453,15 +573,45 @@
   let placementMode = false;
   let history = [];      // [{role:'user'|'assistant', content}]
   let lastSay = "";
-  let busy = false;
-  let blocked = false;
-  let sessionCorrections = []; // errores acumulados de la sesión (para el recap)
-  let recapDone = false;       // ya se hizo el repaso final de los 2 min
-  const RECAP_AT_SECONDS_LEFT = 65; // faltando ~1 min (≈8:55), hacer el recap
+  let busy = false;          // esperando la respuesta de Lein
+  let blocked = false;       // ya se mostró el cierre del día
+  let endPending = false;    // se acabó el tiempo: cerrar cuando termine el turno actual
+  let leinSpeaking = false;
+  let transcribing = false;
+  let convoStarted = false;  // ya empezó la conversación (el reloj solo corre desde aquí)
+  let topic = "";            // tema elegido por el alumno ("🎯 Tengo un tema")
+  let awaitingTopic = false; // el próximo mensaje del alumno es su tema
+  let sessionCorrections = []; // errores de la sesión (para el repaso final)
+  let recapDone = false;       // ya se hizo el repaso final
+  const RECAP_AT_SECONDS_LEFT = 65; // faltando ~1 min, hacer el repaso
+  const PLACEHOLDER = "Toca el micro y habla 🎤  (o escribe)";
+
+  // Interruptor "Texto: Sí / No" (modo solo voz), en todos los niveles. Se recuerda.
+  const TEXT_KEY = "lein_text_" + STUDENT_ID;
+  let textOn = true;
+  function initTextMode(){
+    let saved = null; try{ saved = localStorage.getItem(TEXT_KEY); }catch(e){}
+    textOn = saved !== null ? saved === "1" : !(placementMode || ["B1","B2","C1"].includes(level));
+    applyTextMode();
+  }
+  function applyTextMode(){
+    const b = document.getElementById("textBtn");
+    b.setAttribute("aria-pressed", textOn ? "true" : "false");
+    b.textContent = textOn ? "Texto: Sí" : "Texto: No";
+    feed.classList.toggle("voiceonly", !textOn);
+    feed.querySelectorAll(".bubble.lein").forEach(renderLeinBubble);
+  }
 
   // ---------- Avatar: clonar SVG en cada .mark ----------
   const tpl = document.getElementById("avatarTpl");
-  document.querySelectorAll(".mark").forEach(m => m.appendChild(tpl.content.cloneNode(true)));
+  // Cada copia necesita su propio id de degradado: si no, cuando la pantalla que
+  // tiene el primero está oculta, el cerebro de las demás sale sin color.
+  document.querySelectorAll(".mark").forEach((m, i) => {
+    const c = tpl.content.cloneNode(true);
+    const grad = c.querySelector("linearGradient");
+    if (grad) { grad.id = "leinGrad" + i; c.querySelector("g[fill]").setAttribute("fill", `url(#leinGrad${i})`); }
+    m.appendChild(c);
+  });
 
   function setAvatarState(stageEl, state){
     if(!stageEl) return;
@@ -481,8 +631,7 @@
     enVoice = v.find(x=>/en[-_]?US/i.test(x.lang)&&/natural|google|samantha|zoe|aaron|ava/i.test(x.name))
            || v.find(x=>x.lang&&x.lang.toLowerCase().startsWith('en')) || null;
   }
-  pickVoices();
-  if (typeof speechSynthesis !== "undefined") speechSynthesis.onvoiceschanged = pickVoices;
+  if (typeof speechSynthesis !== "undefined"){ pickVoices(); speechSynthesis.onvoiceschanged = pickVoices; }
 
   // Limpia el texto antes de hablarlo: quita emojis (para que no diga
   // "smiley face") y lo que esté entre paréntesis.
@@ -495,12 +644,14 @@
       .trim();
   }
   // --- Voz premium del servidor (igual en iPhone/Android/PC) con respaldo al navegador ---
-  let serverTTS = true;        // se apaga solo si el backend no tiene voz premium
+  let serverTTS = true;        // se apaga solo si el backend NO tiene voz premium
   let audioUnlocked = false;
-  let selectedVoice = localStorage.getItem("lein_voice") || "shimmer"; // voz elegida en el selector
+  let selectedVoice = localStorage.getItem("lein_voice") || "shimmer"; // voz americana por defecto
+  if (selectedVoice === "fable") selectedVoice = "shimmer"; // Fable es británica: ya no se ofrece
   let speakSeq = 0; // token: solo el audio más reciente suena (evita encimar voces)
   let welcomeUrl = null; // saludo pre-generado para que suene al instante
   const leinAudio = new Audio();
+  leinAudio.preload = "auto";
   const SILENT = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
   // Un toque del usuario "desbloquea" el audio en móviles (clave en iPhone).
   function unlockAudio(){
@@ -511,62 +662,81 @@
   }
 
   // Voz del navegador (respaldo).
-  function speakBrowser(clean, rate, onend){
+  function speakBrowser(clean, rate, onend, onStart){
     try{
       speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(clean);
       u.lang = "en-US"; u.rate = rate || VOICE_RATE[level] || 0.85; u.pitch = 1.05;
       if(enVoice) u.voice = enVoice;
       leinState("talking");
+      try{ onStart && onStart(); }catch(e){}
       u.onend = ()=>{ leinState("idle"); if(onend) onend(); };
       u.onerror = ()=>{ leinState("idle"); if(onend) onend(); };
       speechSynthesis.speak(u);
-    }catch(e){ leinState("idle"); if(onend) onend(); }
+    }catch(e){ leinState("idle"); try{ onStart && onStart(); }catch(_){} if(onend) onend(); }
   }
 
-  // Habla: intenta la voz premium del servidor; si no hay, usa la del navegador.
-  async function speak(text, rate, onend, onStart){
-    let _started=false; const fireStart=()=>{ if(_started) return; _started=true; try{ onStart && onStart(); }catch(e){} };
+  // Reproduce una voz del servidor EN STREAMING (suena mientras se genera).
+  // Si falla, usa la voz del navegador SOLO para este turno (el siguiente vuelve a intentar la premium).
+  function playJob(id, clean, onend, onStart, myToken){
+    let started = false, finished = false;
+    const cleanup = ()=>{ clearTimeout(guard); leinAudio.onplaying = leinAudio.onended = leinAudio.onerror = null; };
+    const done = ()=>{ if(finished) return; finished = true; cleanup(); leinState("idle"); if(onend) onend(); };
+    const fallback = ()=>{
+      if(finished) return;
+      if(started){ done(); return; }
+      finished = true; cleanup();
+      if(myToken !== speakSeq) return;
+      speakBrowser(clean, null, onend, onStart);
+    };
+    try{ speechSynthesis.cancel(); }catch(e){}
+    try{ leinAudio.pause(); }catch(e){}
+    leinAudio.onplaying = ()=>{
+      if(myToken !== speakSeq || started) return;
+      started = true; leinState("talking");
+      try{ onStart && onStart(); }catch(e){}
+    };
+    leinAudio.onended = ()=>{ if(myToken === speakSeq) done(); };
+    leinAudio.onerror = ()=>{ if(myToken === speakSeq) fallback(); };
+    // Si en 12 s no empezó a sonar, pasamos a la voz del navegador.
+    const guard = setTimeout(()=>{ if(!started && myToken === speakSeq){ try{ leinAudio.pause(); }catch(e){} fallback(); } }, 12000);
+    leinAudio.src = API + "/api/tts/stream/" + encodeURIComponent(id);
+    const p = leinAudio.play();
+    if(p && p.catch) p.catch(()=>{ if(myToken === speakSeq && !started) fallback(); });
+  }
+
+  // Habla un audio que el servidor YA empezó a generar (llega con la respuesta de Lein).
+  function speakJob(id, text, onend, onStart){
     const clean = cleanForSpeech(text);
-    if(!clean){ fireStart(); if(onend) onend(); return; }
+    const myToken = ++speakSeq;
+    if(!clean){ try{ onStart && onStart(); }catch(e){} if(onend) onend(); return; }
+    playJob(id, clean, onend, onStart, myToken);
+  }
+
+  // Habla cualquier texto: voz premium del servidor (streaming) o, si no hay, la del navegador.
+  async function speak(text, rate, onend, onStart){
+    const clean = cleanForSpeech(text);
+    if(!clean){ try{ onStart && onStart(); }catch(e){} if(onend) onend(); return; }
     const myToken = ++speakSeq;                 // marca este turno de voz
     try{ leinAudio.pause(); }catch(e){}          // corta lo que estuviera sonando
     try{ speechSynthesis.cancel(); }catch(e){}
     if(serverTTS){
       try{
-        const res = await fetch(API + "/api/tts", {
+        const res = await fetchT(API + "/api/tts/start", {
           method:"POST", headers:{"Content-Type":"application/json"},
           body: JSON.stringify({ text: clean, level, voice: selectedVoice, studentId: STUDENT_ID })
-        });
+        }, 8000);
+        const d = await res.json();
         if(myToken !== speakSeq) return;         // llegó una voz más nueva: descartar esta
-        const ct = res.headers.get("content-type") || "";
-        if(res.ok && ct.includes("audio")){
-          const url = URL.createObjectURL(await res.blob());
-          try{ speechSynthesis.cancel(); }catch(e){}
-          try{ leinAudio.pause(); leinAudio.currentTime = 0; }catch(e){}
-          let started = false;
-          const startPlay = ()=>{
-            if(started) return; started = true;
-            leinState("talking");
-            leinAudio.play().catch(()=>{ leinState("idle"); if(onend) onend(); });
-          };
-          leinAudio.onended = ()=>{ leinState("idle"); URL.revokeObjectURL(url); if(onend) onend(); };
-          leinAudio.onerror  = ()=>{ leinState("idle"); if(onend) onend(); };
-          // Reproducir solo cuando el audio esté listo -> no se corta la 1ª palabra.
-          leinAudio.oncanplay = startPlay;
-          leinAudio.src = url;
-          leinAudio.load();
-          setTimeout(startPlay, 1000); // respaldo por si 'canplay' no dispara
-          return;
-        }
-        serverTTS = false; // backend sin voz premium -> navegador de aquí en más
-      }catch(e){ /* red o reproducción falló: caemos al navegador */ }
+        if(d.id){ playJob(d.id, clean, onend, onStart, myToken); return; }
+        if(d.error === "no_tts") serverTTS = false; // backend sin voz premium
+      }catch(e){ /* red: esta vez usamos la del navegador */ }
     }
     if(myToken !== speakSeq) return; // ya hay una voz más nueva en camino
-    speakBrowser(clean, rate, onend);
+    speakBrowser(clean, rate, onend, onStart);
   }
 
-  // Pre-genera el saludo de bienvenida (para que suene al instante en "Empezar").
+  // Pre-genera el saludo de bienvenida (para que suene al instante al elegir nivel).
   async function precacheWelcome(){
     try{
       const res = await fetch(API + "/api/tts", {
@@ -582,6 +752,7 @@
     if(welcomeUrl){
       try{ speechSynthesis.cancel(); }catch(e){}
       const myToken=++speakSeq;
+      leinAudio.onplaying=null;
       leinAudio.src=welcomeUrl; leinAudio.currentTime=0;
       leinState("talking");
       leinAudio.onended=()=>{ leinState("idle"); };
@@ -591,31 +762,59 @@
       speak("Welcome to your speaking practice! I'm Lein.");
     }
   }
+  function stopAllVoices(){
+    try { speechSynthesis.cancel(); } catch(e){}
+    try { leinAudio.pause(); } catch(e){}
+    speakSeq++; // invalida cualquier voz que venga en camino
+    leinSpeaking = false;
+    leinState("idle");
+    // Si cortamos a Lein a media frase, su burbuja deja de decir "está hablando".
+    document.querySelectorAll(".bubble.lein[data-speaking]").forEach(b=>{ delete b.dataset.speaking; renderLeinBubble(b); });
+  }
 
   // ---------- Pantallas ----------
   function show(id){
     document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
     document.getElementById("chat").classList.remove("active");
-    const el = document.getElementById(id);
-    if(id==="chat") el.classList.add("active"); else el.classList.add("active");
+    document.getElementById(id).classList.add("active");
   }
+  const inChat = ()=> document.getElementById("chat").classList.contains("active");
 
   // ---------- Aviso de navegador ----------
-  if (typeof speechSynthesis === "undefined") {
+  if (typeof speechSynthesis === "undefined" && !window.Audio) {
     document.getElementById("browserWarn").textContent = "Tip: para oír a Lein, ábreme en Safari o Chrome.";
   }
 
-  // ---------- Empezar ----------
+  // ---------- Bienvenida: nuevo alumno vs. alumno que vuelve ----------
+  function setupWelcome(){
+    const sb = document.getElementById("startBtn");
+    const more = document.getElementById("welcomeMore");
+    if (savedLevel && LEVEL_LABELS[savedLevel]) {
+      sb.textContent = "▶ Seguir practicando";
+      more.style.display = "flex";
+      document.getElementById("changeLevelBtn").textContent = "Cambiar nivel (" + labelFor(savedLevel) + ")";
+    } else {
+      sb.textContent = "▶ ¡Empezar!";
+      more.style.display = "none";
+    }
+  }
   document.getElementById("startBtn").onclick = ()=>{
     unlockAudio(); // el toque desbloquea el audio en móviles
-    if (URL_LEVEL && VOICE_RATE[URL_LEVEL]) {
-      // Moodle ya mandó el nivel: entra directo (el saludo es el de Lein en el nivel).
-      startChat(URL_LEVEL);
+    if (savedLevel && LEVEL_LABELS[savedLevel]) {
+      startChat(savedLevel, "free"); // 1 toque: directo a conversar
     } else {
-      // Bienvenida una sola vez (pre-generada = suena al instante).
       show("levelScreen");
       playWelcome();
     }
+  };
+  document.getElementById("topicBtnWelcome").onclick = ()=>{
+    unlockAudio();
+    if (savedLevel && LEVEL_LABELS[savedLevel]) startChat(savedLevel, "topic");
+    else show("levelScreen");
+  };
+  document.getElementById("changeLevelBtn").onclick = ()=>{
+    unlockAudio();
+    show("levelScreen");
   };
 
   // ---------- Elegir nivel ----------
@@ -623,56 +822,120 @@
     const btn = e.target.closest("button"); if(!btn) return;
     const l = btn.dataset.l;
     if (l === "__placement__") startPlacement();
-    else startChat(l);
+    else { saveLevel(l); startChat(l, "ask"); }
   });
 
   // ---------- Iniciar chat normal ----------
-  function startChat(lvl){
+  // mode: "free" (práctica libre ya), "topic" (pedir el tema), "ask" (mostrar las 2 opciones)
+  let returningUser = false;
+  async function startChat(lvl, mode){
     level = lvl; placementMode = false;
+    returningUser = (mode !== "ask"); // entró por "Seguir practicando" / tema desde el inicio
     document.getElementById("levelLabel").textContent = labelFor(lvl);
     resetChat();
+    initTextMode();
     show("chat");
     if(METER){ const p=document.getElementById("meterPill"); if(p){ p.style.display="inline-block"; p.textContent="💲0.0000"; } }
+    primeMic();          // pide el permiso del micrófono YA (no en el primer toque)
     startTimeTracking();
-    refreshTime();
-    // Primer turno: pedimos a Lein que abra la conversación.
-    sendToLein("", true);
+    await refreshTime(); // si ya practicó hoy, muestra el resumen en vez de empezar
+    if (blocked) return;
+    if (mode === "free") beginConversation();
+    else if (mode === "topic") askTopic();
+    else showModeChoice();
   }
 
   // ---------- Iniciar test de ubicación ----------
-  function startPlacement(){
-    placementMode = true; level = "A1";
+  async function startPlacement(){
+    placementMode = true; level = "A1"; returningUser = false;
     document.getElementById("levelLabel").textContent = "Ubicación";
     resetChat();
+    initTextMode();
     show("chat");
+    primeMic();
     startTimeTracking();
-    refreshTime();
+    await refreshTime();
+    if (blocked) return;
+    convoStarted = true;
+    sendToLein("", true);
+  }
+
+  // ---------- Práctica libre o "Tengo un tema" ----------
+  function showModeChoice(){
+    const card = document.createElement("div");
+    card.className = "modecard";
+    const title = document.createElement("div");
+    title.className = "mc-title"; title.textContent = "¿Cómo quieres practicar?";
+    const free = document.createElement("button");
+    free.className = "modebtn primary";
+    free.innerHTML = "<b>💬 Práctica libre</b>";
+    const tp = document.createElement("button");
+    tp.className = "modebtn";
+    tp.innerHTML = "<b>🎯 Tengo un tema</b>";
+    free.onclick = ()=>{ unlockAudio(); markActivity(); card.remove(); beginConversation(); };
+    tp.onclick = ()=>{ unlockAudio(); markActivity(); card.remove(); askTopic(); };
+    card.append(title, free, tp);
+    feed.appendChild(card); scrollDown();
+  }
+  function askTopic(){
+    awaitingTopic = true;
+    const n = document.createElement("div");
+    n.className = "note";
+    n.textContent = "🎯 ¿De qué quieres hablar? Dilo o escríbelo.";
+    const skip = document.createElement("button");
+    skip.className = "link"; skip.textContent = "Mejor práctica libre";
+    skip.onclick = ()=>{ if(!awaitingTopic) return; awaitingTopic = false; n.remove(); resetPlaceholder(); beginConversation(); };
+    n.appendChild(document.createElement("br")); n.appendChild(skip);
+    feed.appendChild(n); scrollDown();
+    document.getElementById("input").placeholder = "Di o escribe tu tema 🎤";
+    setStatus(TOPIC_TURN);
+  }
+  function setTopic(t){
+    topic = t.trim().slice(0, 160);
+    awaitingTopic = false;
+    resetPlaceholder();
+    feed.querySelectorAll(".note").forEach(n=>n.remove());
+    const chip = document.createElement("div");
+    chip.className = "topicchip"; chip.textContent = "🎯 Tema: " + topic;
+    feed.appendChild(chip); scrollDown();
+    beginConversation();
+  }
+  function resetPlaceholder(){ document.getElementById("input").placeholder = PLACEHOLDER; }
+  function beginConversation(){
+    convoStarted = true;
+    markActivity();
     sendToLein("", true);
   }
 
   // Limpia el chat (al entrar o al volver atrás).
   function resetChat(){
-    try { speechSynthesis.cancel(); } catch(e){}
-    try { leinAudio.pause(); } catch(e){}
-    speakSeq++; // invalida cualquier voz que venga en camino
+    stopAllVoices();
     history = []; lastSay = ""; busy = false;
     sessionCorrections = []; recapDone = false;
+    convoStarted = false; awaitingTopic = false; topic = "";
+    endPending = false;
+    resetPlaceholder();
+    setStatus("");
+    setMicStatus("");
+    document.getElementById("voiceSheet").classList.remove("show");
     document.getElementById("feed").innerHTML = "";
-    leinState("idle");
   }
 
-  // ---------- Botón de atrás ----------
+  // ---------- Botón de atrás (vuelve al inicio) ----------
   document.getElementById("backBtn").onclick = ()=>{
+    if(recording){ discardRec = true; stopRecording(); }
     resetChat();
     placementMode = false;
-    show("levelScreen");
+    releaseMic();
+    setupWelcome();
+    show("welcome");
+    renderBrain();
   };
 
   // Volver del selector de nivel a la pantalla de inicio.
   document.getElementById("levelBack").onclick = ()=>{
-    try { speechSynthesis.cancel(); } catch(e){}
-    try { leinAudio.pause(); } catch(e){}
-    speakSeq++;
+    stopAllVoices();
+    setupWelcome();
     show("welcome");
     renderBrain();
     dropTitle();
@@ -692,11 +955,23 @@
     h.className="hint"; h.textContent = "💡 " + text;
     feed.appendChild(h); scrollDown();
   }
-  // Corrección suave y explícita (siempre visible, también en B1+ sin texto).
-  function addCorrection(text){
-    if(!text) return;
+  // Tarjeta de corrección en español: "dijiste … → se dice …" + 🔊 para oír la forma correcta.
+  function addCorrection(d){
+    if(!d || !d.correction) return;
     const c = document.createElement("div");
-    c.className="correction"; c.textContent = "✏️ " + text;
+    c.className = "correction";
+    if (d.fix_said && d.fix_better) {
+      const ct = document.createElement("span"); ct.className = "ct"; ct.textContent = "✏️ Corrección: ";
+      const said = document.createElement("span"); said.className = "said"; said.textContent = "dijiste “" + d.fix_said + "”";
+      const arrow = document.createTextNode(" → se dice ");
+      const better = document.createElement("span"); better.className = "better"; better.textContent = "“" + d.fix_better + "”";
+      const sp = document.createElement("button"); sp.className = "minispeak"; sp.textContent = "🔊";
+      sp.title = "Oír la forma correcta"; sp.setAttribute("aria-label", "Oír la forma correcta");
+      sp.onclick = ()=> speak(d.fix_better);
+      c.append(ct, said, arrow, better, sp);
+    } else {
+      c.textContent = "✏️ " + d.correction;
+    }
     feed.appendChild(c); scrollDown();
   }
   function addSuggestions(arr){
@@ -711,71 +986,148 @@
       const c = document.createElement("button");
       c.className="chip"; c.textContent = s;
       // Tocar el chip ESCRIBE la frase en la casilla (no gasta voz).
-      c.onclick = ()=>{ const inp=document.getElementById("input"); inp.value=s; inp.focus(); };
+      c.onclick = ()=>{ const inp=document.getElementById("input"); inp.value=s; updateSendBtn(); inp.focus(); };
       row.appendChild(c);
     });
     feed.appendChild(row); scrollDown();
   }
-  function addRepeat(text){
-    const r = document.createElement("button");
-    r.className="speakbtn"; r.textContent = "🔊 Repetir";
-    r.onclick = ()=> speak(text);
-    feed.appendChild(r); scrollDown();
-  }
-  // Burbuja "solo escucha" (cuando NO mostramos el texto de Lein).
-  function addListenBubble(){
+  // Burbuja de Lein: con texto, o (modo solo voz) un toque para oírla de nuevo.
+  function addLeinBubble(text, ttsId, spoken, speaking){
     const b = document.createElement("div");
-    b.className = "bubble lein listen";
-    b.textContent = "🔊 Escucha a Lein…";
-    feed.appendChild(b); scrollDown();
+    b.className = "bubble lein";
+    b.dataset.text = text; b.dataset.spoken = spoken || text;
+    if(speaking) b.dataset.speaking = "1";
+    if(ttsId){ b.dataset.tts = ttsId; b.dataset.ttsAt = String(Date.now()); }
+    b.onclick = ()=>{
+      if(!b.classList.contains("voiceonly")) return;
+      markActivity();
+      // El audio queda guardado en el servidor ~10 min: repetirlo no cuesta.
+      if(b.dataset.tts && Date.now() - Number(b.dataset.ttsAt) < 9*60*1000) speakJob(b.dataset.tts, b.dataset.spoken);
+      else speak(b.dataset.spoken);
+    };
+    renderLeinBubble(b);
+    feed.appendChild(b); scrollDown(); return b;
   }
-  // ¿Se muestra el texto de lo que dice Lein?
-  // Solo en A1/A1+/A2. En B1, B2, C1 y en el placement = solo escuchar.
-  function showTranscript(){
-    if (placementMode) return false;
-    return level === "A1" || level === "A1+" || level === "A2";
+  function renderLeinBubble(b){
+    if(!b.dataset.text) return;
+    b.classList.toggle("voiceonly", !textOn);
+    b.textContent = textOn ? b.dataset.text
+      : (b.dataset.speaking ? "🔊 Lein está hablando…" : "🔊 Toca para oír de nuevo");
   }
+  // "No dije eso": si el micrófono entendió otra cosa, borra ese turno y vuelve a grabar.
+  let turnSnap = null, chatCtrl = null, undoing = false;
+  function addUndo(meNode){
+    feed.querySelectorAll(".undo").forEach(u=>u.remove());
+    const u = document.createElement("button");
+    u.className = "undo"; u.textContent = "↺ No dije eso";
+    u.title = "Borrar y volver a grabar";
+    u.onclick = undoLastTurn;
+    meNode.after(u);
+  }
+  function undoLastTurn(){
+    if(!turnSnap || blocked) return;
+    const s = turnSnap; turnSnap = null;
+    undoing = true;
+    if(chatCtrl){ try{ chatCtrl.abort(); }catch(e){} }
+    stopAllVoices();
+    let n = s.node; while(n){ const next = n.nextSibling; n.remove(); n = next; }
+    typingEl = null;
+    history.length = s.histLen;
+    sessionCorrections.length = s.corrLen;
+    saveDay(s.day);
+    setTimeout(()=>{ undoing = false; busy = false; setComposerBusy(false); startRecording(); }, 60);
+  }
+  // Estado grande bajo Lein, para que el alumno SIEMPRE sepa qué pasa.
+  const YOUR_TURN = "Tu turno: toca el micrófono 🎤";
+  const TOPIC_TURN = "Dime de qué quieres hablar 🎤";
+  let micTips = 0; // la burbuja "Tócalo y habla" sale solo las primeras 3 veces
+  function setStatus(text, wait){
+    const s = document.getElementById("leinStatus"); if(!s) return;
+    s.textContent = text || "";
+    s.classList.toggle("wait", !!wait);
+    // Cuando le toca al alumno, el micrófono "llama" la atención.
+    const yourTurn = text === YOUR_TURN || text === TOPIC_TURN;
+    const mic = document.getElementById("micBtn");
+    if (yourTurn && !mic.classList.contains("yourturn")) micTips++;
+    mic.classList.toggle("yourturn", yourTurn);
+    mic.classList.toggle("tip", yourTurn && micTips <= 3);
+  }
+  function stopMicNudge(){ document.getElementById("micBtn").classList.remove("yourturn", "tip"); }
   let typingEl=null;
-  function showTyping(){ typingEl=document.createElement("div"); typingEl.className="typing"; typingEl.textContent="Lein está pensando…"; feed.appendChild(typingEl); scrollDown(); leinState("listening"); }
+  function showTyping(isOpening){
+    const label = isOpening ? "Lein está empezando la conversación…" : "Lein está pensando…";
+    typingEl=document.createElement("div"); typingEl.className="typing";
+    typingEl.innerHTML="<i></i><i></i><i></i><span></span>";
+    typingEl.querySelector("span").textContent = label;
+    feed.appendChild(typingEl); scrollDown();
+    leinState("listening");
+    setStatus(label, true);
+  }
   function hideTyping(){ if(typingEl){typingEl.remove(); typingEl=null;} }
   function scrollDown(){ feed.scrollTop = feed.scrollHeight; }
 
+  // Si Lein no responde: botón amable para reintentar (sin duplicar la burbuja del alumno).
+  function showRetry(text, isOpening, isRecap){
+    feed.querySelectorAll(".retrybtn").forEach(b=>b.remove());
+    leinState("idle"); setStatus("");
+    const b = document.createElement("button");
+    b.className = "retrybtn";
+    b.textContent = "Lein se demoró un poco. Toca para reintentar ↻";
+    b.onclick = ()=>{ b.remove(); sendToLein(text, isOpening, isRecap, true); };
+    feed.appendChild(b); scrollDown();
+  }
+  function setComposerBusy(on){
+    document.getElementById("sendBtn").disabled = on;
+    document.getElementById("micBtn").classList.toggle("busy", on);
+  }
+
   // ---------- Hablar con Lein (backend) ----------
-  async function sendToLein(text, isOpening, isRecap){
+  async function sendToLein(text, isOpening, isRecap, isRetry, fromVoice){
     if (busy || blocked) return;
     busy = true;
-    document.getElementById("sendBtn").disabled = true;
+    setComposerBusy(true);
+    feed.querySelectorAll(".retrybtn").forEach(b=>b.remove());
 
-    if (text && !isOpening && !isRecap){ addBubble(text, "me"); history.push({role:"user", content:text}); addBrainPower(1); }
+    const isStudentTurn = !!text && !isOpening && !isRecap;
+    if (isStudentTurn && !isRetry){
+      const me = addBubble(text, "me");
+      turnSnap = { node: me, histLen: history.length, corrLen: sessionCorrections.length, day: loadDay() };
+      history.push({role:"user", content:text});
+      addBrainPower(1); countPhrase();
+      if (fromVoice) addUndo(me); // lo que Lein entendió queda a la vista, con opción de regrabar
+    }
 
-    showTyping();
+    showTyping(isOpening);
+    chatCtrl = new AbortController();
+    const chatTimer = setTimeout(()=>{ try{ chatCtrl.abort(); }catch(e){} }, 20000);
     try{
       const res = await fetch(API + "/api/chat", {
-        method:"POST", headers:{"Content-Type":"application/json"},
+        method:"POST", headers:{"Content-Type":"application/json"}, signal: chatCtrl.signal,
         body: JSON.stringify({
           text: isOpening ? (placementMode ? "Hello" : "Hi, let's start.") : text,
-          history, level, placement: placementMode, studentId: STUDENT_ID,
+          // El turno nuevo del alumno va en "text"; no lo mandamos repetido en el historial.
+          history: isStudentTurn ? history.slice(0, -1) : history,
+          level, placement: placementMode, studentId: STUDENT_ID,
           opening: isOpening,
-          recap: !!isRecap, errors: isRecap ? sessionCorrections : [],
-          studentName: knownName || ""
+          recap: !!isRecap, errors: isRecap ? sessionCorrections.map(c=>c.text) : [],
+          studentName: knownName || "",
+          topic, voice: selectedVoice,
+          returning: !!isOpening && returningUser // "Seguir practicando": no volver a pedir el nombre
         })
       });
       const data = await res.json();
 
-      if (data.limitReached){ hideTyping(); goBlocked(data.message); return; }
-      if (data.error){ hideTyping(); addBubble("(Ups: " + (data.message||data.error) + ")", "lein"); return; }
+      if (data.limitReached){ hideTyping(); showSummary(); return; }
+      if (data.error){ hideTyping(); showRetry(text, isOpening, isRecap); return; }
 
       const wasPlacement = placementMode; // ¿este turno fue del test de ubicación?
       // SOLO es resultado de nivel si REALMENTE veníamos del test de ubicación.
-      // (Blindaje: si Claude mete "placement" por error en una charla normal, lo
-      //  ignoramos — antes nos cambiaba el nivel a media conversación.)
       const isResult = wasPlacement && !!data.placement;
-
-      // Si era test de ubicación y ya hay nivel, lo aplicamos.
-      if (wasPlacement && data.placement){
+      if (isResult){
         placementMode = false; level = data.placement;
+        saveLevel(level); // el resultado se recuerda: mañana entra directo
         document.getElementById("levelLabel").textContent = labelFor(level);
-        showToast(`🎉 ¡Tu nivel: ${labelFor(level)}!`); // muestra el nivel amigable
+        showToast(`🎉 ¡Tu nivel: ${labelFor(level)}!`);
       }
 
       // Recordar el nombre si Lein lo aprendió (para no preguntarlo otro día).
@@ -787,46 +1139,51 @@
       lastSay = data.say || "";
       history.push({role:"assistant", content:lastSay});
 
-      // El texto aparece EXACTAMENTE cuando Lein empieza a hablar (más natural).
-      // Hasta entonces se mantiene el "escribiendo…".
-      let _revealed = false;
+      const hasFix = !wasPlacement && !isRecap && !!data.correction;
+      // Lo que se oye: primero la corrección, luego la respuesta.
+      const toSpeak = hasFix ? (data.correction + " ... " + lastSay) : lastSay;
+
+      if (hasFix){
+        const fix = { said: data.fix_said || "", better: data.fix_better || "", text: data.correction };
+        sessionCorrections.push(fix);
+        saveFix(fix);
+      }
+      // Con texto: el mensaje aparece YA. Solo voz: aparece cuando Lein EMPIEZA a
+      // hablar (mientras tanto sigue "Lein está pensando…").
+      let revealed = false, leinBubble = null;
       const reveal = ()=>{
-        if (_revealed) return; _revealed = true;
+        if (revealed) return; revealed = true;
         hideTyping();
-        // 1º La corrección suave (PRIMERO, para que la note antes de la pregunta).
-        //    Siempre visible (también en B1+). Se acumula para el repaso final.
-        if (!wasPlacement && !isRecap && data.correction){
-          addCorrection(data.correction);
-          sessionCorrections.push(data.correction);
-        }
-        // 2º La respuesta/pregunta de Lein. Placement y RECAP SÍ muestran texto.
-        if (isResult || isRecap || showTranscript()) {
-          addBubble(lastSay, "lein");
-          addHint(data.hint);
-        } else {
-          addListenBubble(); // B1+/placement: solo escuchar, sin texto
-        }
-        // Sugerencias: solo en conversación normal. En el placement NO se dan
-        // opciones — necesitamos oír las palabras propias del estudiante.
+        if (hasFix) addCorrection(data);
+        leinBubble = addLeinBubble(lastSay, data.ttsId, toSpeak, leinSpeaking);
+        addHint(data.hint);
+        // Sugerencias: solo en conversación normal (en la ubicación necesitamos sus propias palabras).
         if (!wasPlacement) addSuggestions(data.suggestions);
       };
-
-      // Lein DICE primero el tip de corrección y LUEGO la pregunta (así el alumno
-      // no olvida qué dijo mal antes de oír la siguiente pregunta).
-      const toSpeak = (!isRecap && !wasPlacement && data.correction)
-        ? ("Quick tip: " + data.correction + " ... " + lastSay)
-        : lastSay;
-      speak(toSpeak, null, null, reveal); // reveal corre al ARRANCAR la voz
-      setTimeout(reveal, 6000); // respaldo: si la voz no arranca, mostrar igual
+      leinSpeaking = true;
+      if (textOn) reveal();
+      setTimeout(reveal, 8000); // respaldo si la voz no arranca
+      const onVoiceStart = ()=>{ reveal(); leinState("talking"); setStatus("Lein está hablando…"); };
+      const afterVoice = ()=>{
+        leinSpeaking = false; markActivity();
+        reveal();
+        if (leinBubble){ delete leinBubble.dataset.speaking; renderLeinBubble(leinBubble); }
+        if (!blocked) setStatus(awaitingTopic ? "" : YOUR_TURN);
+        maybeEnd();
+      };
+      if (data.ttsId) speakJob(data.ttsId, toSpeak, afterVoice, onVoiceStart);
+      else speak(toSpeak, null, afterVoice, onVoiceStart);
 
       if (data._timeStatus) updateTime(data._timeStatus);
       if (data._cost) updateMeter(data._cost);
     }catch(err){
+      if (undoing) return; // el alumno tocó "No dije eso": no es un error
       hideTyping();
-      addBubble("(No pude conectar con Lein. ¿El servidor está encendido?)", "lein");
+      showRetry(text, isOpening, isRecap);
     }finally{
-      busy=false; document.getElementById("sendBtn").disabled=false;
-      document.getElementById("input").focus();
+      clearTimeout(chatTimer); chatCtrl = null;
+      busy=false; setComposerBusy(false);
+      maybeEnd();
     }
   }
 
@@ -834,15 +1191,26 @@
   function submit(){
     const inp = document.getElementById("input");
     const t = inp.value.trim();
-    if(!t) return;
-    inp.value="";
+    if(!t || busy || blocked) return;
+    inp.value=""; updateSendBtn(); markActivity();
+    if (awaitingTopic) { setTopic(t); return; }
+    if (!convoStarted) return; // aún eligiendo cómo practicar
     sendToLein(t, false);
   }
   document.getElementById("sendBtn").onclick = submit;
   document.getElementById("input").addEventListener("keydown", e=>{ if(e.key==="Enter") submit(); });
+  // Voz primero: el botón de enviar solo aparece cuando hay algo escrito.
+  function updateSendBtn(){ document.getElementById("sendBtn").classList.toggle("hide", !document.getElementById("input").value.trim()); }
+  document.getElementById("input").addEventListener("input", ()=>{ updateSendBtn(); markActivity(); stopMicNudge(); });
+  document.getElementById("textBtn").onclick = ()=>{
+    textOn = !textOn;
+    try{ localStorage.setItem(TEXT_KEY, textOn ? "1" : "0"); }catch(e){}
+    applyTextMode(); markActivity();
+  };
 
   // ---------- Micrófono (voz -> texto) ----------
   let mediaStream=null, mediaRecorder=null, recChunks=[], recAudioCtx=null, vadInt=null, recording=false, recProcessed=false, recMaxTimer=null;
+  let discardRec = false, recStartedAt = 0;
 
   function setMicStatus(html){
     const s=document.getElementById("micStatus");
@@ -853,9 +1221,9 @@
   }
   function setMicUI(state){
     const b=document.getElementById("micBtn"); if(!b) return;
-    b.classList.remove("recording","busy");
+    b.classList.remove("recording");
     if(state==="recording"){ b.textContent="⏹"; b.classList.add("recording"); b.title="Detener"; }
-    else if(state==="transcribing"){ b.textContent="…"; b.classList.add("busy"); b.title="Procesando"; }
+    else if(state==="transcribing"){ b.textContent="…"; b.title="Procesando"; }
     else { b.textContent="🎤"; b.title="Hablar"; }
   }
   function pickMime(){
@@ -864,7 +1232,7 @@
     return "";
   }
   async function ensureMic(){
-    if(mediaStream) return mediaStream;
+    if(mediaStream && mediaStream.getAudioTracks().some(t=>t.readyState==="live")) return mediaStream;
     mediaStream = await navigator.mediaDevices.getUserMedia({ audio:{ echoCancellation:true, noiseSuppression:true, autoGainControl:true } });
     return mediaStream;
   }
@@ -874,19 +1242,34 @@
     try{ if(mediaStream){ mediaStream.getTracks().forEach(t=>{ try{ t.stop(); }catch(e){} }); } }catch(e){}
     mediaStream=null;
   }
+  // Al entrar al chat: pedimos el permiso de una vez, con un mensaje claro si lo niega.
+  async function primeMic(){
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder){
+      setMicStatus("Este navegador no permite el micrófono. Puedes escribir.");
+      return;
+    }
+    try{
+      await ensureMic();
+      if(MOBILE) releaseMic(); // en celular lo soltamos hasta que toque el micro (la voz suena fuerte)
+    }catch(err){ handleMicError(err); }
+  }
   async function startRecording(){
-    if(recording || busy || blocked) return;
+    if(recording || busy || blocked || transcribing) return;
+    if(!convoStarted && !awaitingTopic){ setMicStatus("Primero elige: 💬 Práctica libre o 🎯 Tengo un tema 👆"); return; }
+    stopAllVoices(); // si Lein sigue hablando y el alumno quiere responder, le cedemos la palabra
+    markActivity();
     try{
       const stream = await ensureMic();
-      recChunks=[]; recProcessed=false;
+      recChunks=[]; recProcessed=false; discardRec=false;
       const mime=pickMime();
       mediaRecorder = new MediaRecorder(stream, mime?{mimeType:mime}:undefined);
       mediaRecorder.ondataavailable = e=>{ if(e.data && e.data.size) recChunks.push(e.data); };
       mediaRecorder.onstop = onRecStop;
-      mediaRecorder.start(500);
-      recording=true;
+      mediaRecorder.start(250);
+      recording=true; recStartedAt=Date.now();
       setMicUI("recording");
-      setMicStatus("🎙️ Te escucho… habla, y cuando termines se envía solo.");
+      setMicStatus("");
+      setStatus("Te escucho… toca ⏹ al terminar");
       leinState("listening");
       startVAD(stream);
       recMaxTimer=setTimeout(()=>{ if(recording) stopRecording(); }, 20000); // tope duro de respaldo
@@ -898,7 +1281,9 @@
     if(recMaxTimer){ clearTimeout(recMaxTimer); recMaxTimer=null; }
     stopVAD();
     setMicStatus("");
-    setMicUI("transcribing");
+    setMicUI(discardRec ? "idle" : "transcribing");
+    transcribing = !discardRec;
+    setStatus(discardRec ? "" : "Un momento…", true);
     leinState("idle");
     try{ mediaRecorder.stop(); }catch(e){ onRecStop(); }
     // Respaldo: si onstop no dispara (pasa en algunos móviles), procesamos igual.
@@ -908,21 +1293,37 @@
     if(recProcessed) return; recProcessed=true;
     const blob=new Blob(recChunks,{type:(mediaRecorder && mediaRecorder.mimeType)||"audio/webm"});
     recChunks=[];
-    // Soltar el micrófono YA: en iPhone, mientras el micro esté abierto el sonido
-    // sale por el auricular (bajito). Al soltarlo, la voz de Lein vuelve al altavoz.
-    releaseMic();
-    if(!blob.size){ setMicUI("idle"); setMicStatus("No te escuché 🙉 — toca el micro e intenta otra vez."); return; }
+    // En celular soltamos el micrófono YA (la voz de Lein vuelve al altavoz).
+    if(MOBILE || !inChat()) releaseMic();
+    if(discardRec){
+      discardRec=false; transcribing=false; setMicUI("idle");
+      if(inChat() && !blocked && convoStarted) setStatus(YOUR_TURN);
+      if(inChat() && !blocked) setMicStatus("No te escuché 🙉 — toca el micro e inténtalo otra vez.");
+      maybeEnd(); return;
+    }
+    if(!blob.size){ transcribing=false; setMicUI("idle"); setMicStatus("No te escuché 🙉 — toca el micro e inténtalo otra vez."); maybeEnd(); return; }
     try{
-      const res=await fetch(API+"/api/stt?studentId="+encodeURIComponent(STUDENT_ID),{method:"POST",headers:{"Content-Type":blob.type},body:blob});
+      const lang = awaitingTopic ? "&lang=auto" : ""; // el tema puede venir en español
+      // Contexto para el "oído": lo último que dijo Lein (lo que el alumno responde).
+      const ctx = encodeURIComponent((lastSay || "").slice(0, 300));
+      const res=await fetchT(API+"/api/stt?studentId="+encodeURIComponent(STUDENT_ID)+lang,{method:"POST",headers:{"Content-Type":blob.type,"X-Lein-Context":ctx},body:blob}, 20000);
       const data=await res.json();
-      setMicUI("idle");
+      transcribing=false; setMicUI("idle");
+      if(data.error || !(data.text||"").trim()) setStatus(YOUR_TURN);
+      if(data.error){ setMicStatus("Hubo un problema de conexión 📶 — toca el micro e inténtalo otra vez."); maybeEnd(); return; }
       const text=(data.text||"").trim();
-      if(text){ sendToLein(text,false); }
-      else { setMicStatus("No te escuché bien 🙉 — toca el micro e intenta otra vez."); }
-    }catch(e){ setMicUI("idle"); setMicStatus("Hubo un problema con el audio. Intenta de nuevo."); }
+      if(!text){ setMicStatus("No te escuché bien 🙉 — toca el micro e inténtalo otra vez."); maybeEnd(); return; }
+      if(awaitingTopic) setTopic(text);
+      else sendToLein(text,false,false,false,true);
+    }catch(e){
+      transcribing=false; setMicUI("idle");
+      setMicStatus("Hubo un problema de conexión 📶 — toca el micro e inténtalo otra vez.");
+      setStatus(YOUR_TURN);
+      maybeEnd();
+    }
   }
 
-  // Detector de voz con CALIBRACIÓN del ruido ambiente (se adapta al lugar).
+  // Detector de voz: mide el ruido del lugar y corta solo cuando dejas de hablar.
   function startVAD(stream){
     try{
       recAudioCtx=new (window.AudioContext||window.webkitAudioContext)();
@@ -932,34 +1333,36 @@
       src.connect(an);
       const data=new Uint8Array(an.fftSize);
       const t0=Date.now();
-      let noiseFloor=0.01, calibN=0, calibrating=true;
-      let spoke=false, silenceStart=null;
+      // Principiantes hacen pausas más largas mientras piensan.
+      // Cuánto silencio esperar antes de enviar: los adultos se quedan pensando a
+      // mitad de frase. Si ya terminó, puede tocar ⏹ para enviar al instante.
+      const SILENCE_MS = (level==="A1" || level==="A1+" || placementMode) ? 2200
+                       : (level==="A2" || level==="B1") ? 1800 : 1400;
+      let floor=null, spoke=false, lastLoud=0, speechLvl=0, noiseLvl=null, sm=0;
       vadInt=setInterval(()=>{
         if(!recording) return;
         an.getByteTimeDomainData(data);
         let sum=0; for(let i=0;i<data.length;i++){ const v=(data[i]-128)/128; sum+=v*v; }
-        const rms=Math.sqrt(sum/data.length); const now=Date.now();
-        // 1) Calibrar el ruido del lugar los primeros ~450ms (no hables aún).
-        if(calibrating){
-          noiseFloor=(noiseFloor*calibN+rms)/(calibN+1); calibN++;
-          if(now-t0>450) calibrating=false;
-          return;
-        }
-        // 2) Umbrales relativos al ruido medido. Más SENSIBLE que antes, y con el
-        //    ruido topado para que un lugar ruidoso no deje a Lein "sordo".
-        const nf=Math.min(noiseFloor, 0.03);
+        const raw=Math.sqrt(sum/data.length); const now=Date.now();
+        sm = sm ? sm*0.5 + raw*0.5 : raw; const rms = sm; // suavizado: ignora chasquidos sueltos
+        // Ruido del lugar = lo más bajo que se oye al inicio. Así, si el alumno
+        // empieza a hablar enseguida, su voz NO se confunde con ruido.
+        if(now-t0<500) floor = (floor===null) ? rms : Math.min(floor, rms);
+        const nf=Math.min(floor===null ? 0.01 : floor, 0.03);
+        if(noiseLvl===null) noiseLvl = nf;
         const speakTh=Math.max(0.016, nf*1.8+0.009); // tu voz sobre el ruido
-        const silTh  =Math.max(0.011, nf*1.3+0.004); // silencio = cerca del ruido
-        if(rms>speakTh){ spoke=true; silenceStart=null; }
-        else if(spoke && rms<silTh){
-          if(silenceStart===null) silenceStart=now;
-          else if(now-silenceStart>1300){ stopRecording(); return; } // ~1.3s callado -> enviar
-        } else if(spoke){ silenceStart=null; }
-        // Si no detecta voz CLARA en 8s, NO botamos el audio: lo mandamos igual y
-        // que Whisper decida (a veces la voz es baja y el detector no la marca).
-        if(!spoke && now-t0>8000){ stopRecording(); return; }
+        // "Hablando" = por encima del ruido inicial, de una parte de TU voz y del
+        // ruido ACTUAL del cuarto (el micrófono sube el volumen solo cuando callas;
+        // antes ese ruido reiniciaba la cuenta del silencio y nunca cortaba).
+        const loudTh = Math.max(speakTh, speechLvl*0.3, noiseLvl*1.7);
+        speechLvl = Math.max(speechLvl*0.997, spoke || rms>speakTh ? rms : 0); // tu voz: sube rápido, baja lento
+        if(rms>loudTh){ spoke=true; lastLoud=now; }
+        if(!spoke || rms < speechLvl*0.5) noiseLvl = noiseLvl*0.85 + rms*0.15; // ruido actual
+        if(spoke && rms<=loudTh && now-lastLoud>SILENCE_MS){ stopRecording(); return; } // callado -> enviar
+        // 8 s sin voz: no mandamos audio vacío (evita respuestas a cosas que no dijo).
+        if(!spoke && now-t0>8000){ discardRec=true; stopRecording(); return; }
         if(now-t0>20000){ stopRecording(); return; } // tope duro
-      }, 80);
+      }, 60);
     }catch(e){ /* el tope de startRecording cierra si algo falla */ }
   }
   function stopVAD(){ if(vadInt){ clearInterval(vadInt); vadInt=null; } if(recAudioCtx){ try{recAudioCtx.close();}catch(e){} recAudioCtx=null; } }
@@ -968,7 +1371,7 @@
     recording=false; setMicUI("idle");
     const name=(err && err.name) || "";
     if(name==="NotAllowedError" || name==="SecurityError"){
-      setMicStatus("Micrófono bloqueado. Toca el candado 🔒 de la barra del navegador → Micrófono → Permitir. <button class='actbtn' id='micRetry'>Reintentar</button>");
+      setMicStatus("🎤 Micrófono bloqueado: toca el candado 🔒 de arriba → Permitir. <button class='actbtn' id='micRetry'>Reintentar</button>");
     } else if(name==="NotFoundError"){
       setMicStatus("No encuentro micrófono en este equipo. Puedes escribir mientras tanto.");
     } else {
@@ -977,30 +1380,59 @@
   }
 
   document.getElementById("micBtn").onclick = ()=>{
-    unlockAudio();
-    if(recording) stopRecording();
+    unlockAudio(); markActivity();
+    if(recording) stopRecording(); // si lo detiene a mano, se envía lo grabado
     else startRecording();
   };
+  window.addEventListener("pagehide", releaseMic);
 
   // ---------- Contador de tiempo (tiempo activo) ----------
-  let pingTimer=null;
-  function startTimeTracking(){
-    if(pingTimer) return;
-    // Cada 10s de página visible, reportamos 10s de práctica activa.
-    pingTimer = setInterval(async ()=>{
-      if(document.hidden || blocked) return;
-      try{
-        const r = await fetch(API + "/api/usage/ping", {
-          method:"POST", headers:{"Content-Type":"application/json"},
-          body: JSON.stringify({ studentId: STUDENT_ID, seconds: 10 })
-        });
-        updateTime(await r.json());
-      }catch(e){}
-    }, 10000);
+  // Cuenta SOLO práctica activa, segundo a segundo: mientras el alumno habla o
+  // escucha a Lein, y hasta 20 s pensando su respuesta. Se PAUSA si Lein está
+  // pensando, si está en otra pestaña/ventana, fuera del chat o sin hacer nada.
+  let pingTimer=null, tickTimer=null, pendingSecs=0, serverRemaining=null, lastActivity=Date.now();
+  const THINK_SECONDS = 20;
+  function markActivity(){ lastActivity = Date.now(); }
+  function practicing(){
+    if(document.hidden || blocked || !inChat() || !convoStarted) return false;
+    if(busy || transcribing) return false;          // Lein pensando: no cuenta
+    if(recording || leinSpeaking) return true;      // hablando o escuchando: cuenta
+    if(document.hasFocus && !document.hasFocus()) return false; // está en otra ventana
+    return Date.now() - lastActivity < THINK_SECONDS * 1000;
   }
+  function startTimeTracking(){
+    if(tickTimer) return;
+    tickTimer = setInterval(()=>{
+      const on = practicing();
+      document.getElementById("timePill").classList.toggle("paused", !on);
+      if(!on) return;
+      pendingSecs++;
+      renderTime();
+      if(serverRemaining !== null && serverRemaining - pendingSecs <= 0) flushPractice();
+    }, 1000);
+    pingTimer = setInterval(flushPractice, 10000);
+  }
+  async function flushPractice(){
+    if(!pendingSecs) return;
+    const secs = Math.min(pendingSecs, 60); pendingSecs -= secs;
+    try{
+      const r = await fetchT(API + "/api/usage/ping", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ studentId: STUDENT_ID, seconds: secs })
+      }, 10000);
+      updateTime(await r.json());
+    }catch(e){ pendingSecs += secs; }
+  }
+  function renderTime(){
+    if(serverRemaining === null) return;
+    const rem = Math.max(0, serverRemaining - pendingSecs);
+    const m = Math.floor(rem/60), s = rem%60;
+    document.getElementById("timePill").textContent = `${m}:${String(s).padStart(2,"0")}`;
+  }
+  window.addEventListener("pagehide", ()=>{ flushPractice(); });
   async function refreshTime(){
     try{
-      const r = await fetch(API + "/api/usage/status?studentId=" + encodeURIComponent(STUDENT_ID));
+      const r = await fetchT(API + "/api/usage/status?studentId=" + encodeURIComponent(STUDENT_ID), {}, 8000);
       updateTime(await r.json());
     }catch(e){}
   }
@@ -1014,29 +1446,64 @@
     pill.title = "Sesión hoy: $" + (cost.sessionUSD||0).toFixed(4) + " · último turno: $" + (cost.turnUSD||0).toFixed(4) + " (solo dueño)";
   }
   function updateTime(st){
-    if(!st) return;
-    const rem = Math.max(0, st.remainingSeconds||0);
-    const m = Math.floor(rem/60), s = rem%60;
-    document.getElementById("timePill").textContent = `${m}:${String(s).padStart(2,"0")}`;
-    // Faltando ~2 min: repaso final de los errores (si hubo) y pedir repetir.
-    if (!recapDone && !busy && !placementMode && !blocked
+    if(!st || st.remainingSeconds === undefined) return;
+    serverRemaining = Math.max(0, st.remainingSeconds||0);
+    renderTime();
+    const rem = Math.max(0, serverRemaining - pendingSecs);
+    // Faltando ~1 min: repaso final de los errores (si hubo) y pedir repetir.
+    if (!recapDone && !busy && !placementMode && !blocked && convoStarted
         && sessionCorrections.length > 0
         && rem <= RECAP_AT_SECONDS_LEFT && rem > 0){
       recapDone = true;
       sendToLein("", false, true);
     }
-    if (st.blocked) goBlocked();
+    if (st.blocked){ endPending = true; maybeEnd(); }
   }
-  function goBlocked(msg){
-    blocked = true;
-    if(msg) document.getElementById("blockedMsg").textContent = msg;
-    document.getElementById("blockedOverlay").classList.add("active");
+  // Cierra el día SOLO cuando el turno actual terminó (no corta a mitad de frase).
+  function maybeEnd(){
+    if(!endPending || blocked) return;
+    if(busy || recording || transcribing || leinSpeaking) return;
+    showSummary();
+  }
+  // Tarjeta de cierre: frases de hoy, correcciones aprendidas (en verde) y días seguidos.
+  function showSummary(){
+    blocked = true; endPending = false;
+    flushPractice();
+    if(pingTimer){ clearInterval(pingTimer); pingTimer=null; }
+    if(tickTimer){ clearInterval(tickTimer); tickTimer=null; }
+    if(recording){ discardRec = true; stopRecording(); }
+    releaseMic();
     document.getElementById("input").disabled = true;
     document.getElementById("sendBtn").disabled = true;
-    if(pingTimer){ clearInterval(pingTimer); pingTimer=null; }
+    const day = loadDay();
+    document.getElementById("sumTitle").textContent = knownName ? `¡Buen trabajo hoy, ${knownName}!` : "¡Buen trabajo hoy!";
+    document.getElementById("sumPhrases").textContent = day.phrases;
+    document.getElementById("sumFixes").textContent = day.fixes.length;
+    document.getElementById("sumDays").textContent = Math.max(1, streakDays());
+    const list = document.getElementById("sumList");
+    list.innerHTML = "";
+    if (day.fixes.length){
+      day.fixes.forEach(f=>{
+        const li = document.createElement("li");
+        const ok = document.createElement("span"); ok.className = "ok";
+        ok.textContent = "✓ " + (f.better || f.text);
+        li.appendChild(ok);
+        if (f.said){
+          const was = document.createElement("span"); was.className = "was";
+          was.textContent = "Antes decías: “" + f.said + "”";
+          li.appendChild(was);
+        }
+        list.appendChild(li);
+      });
+    } else {
+      const li = document.createElement("li"); li.className = "none";
+      li.textContent = day.phrases ? "Hoy no hubo nada importante que corregir. ¡Excelente! 🎉" : "Mañana practicamos juntos. ¡Te espero!";
+      list.appendChild(li);
+    }
+    document.getElementById("blockedOverlay").classList.add("active");
   }
 
-  // ---------- Selector de voz (solo si hay voz premium) ----------
+  // ---------- Selector de voz (dentro del chat; solo si hay voz premium) ----------
   const sampleCache = {}; // guarda la muestra de cada voz (clic siguiente = instantáneo)
   const SAMPLE_TEXT = "Hi there! I'm Lein. Nice to meet you!";
   async function playSample(voice, btn){
@@ -1048,15 +1515,16 @@
     try{
       let url = sampleCache[voice];
       if(!url){
-        const res = await fetch(API + "/api/tts", {
+        const res = await fetchT(API + "/api/tts", {
           method:"POST", headers:{"Content-Type":"application/json"},
           body: JSON.stringify({ text: SAMPLE_TEXT, level: "A2", voice })
-        });
+        }, 15000);
         if(!res.ok || !(res.headers.get("content-type")||"").includes("audio")){ stop(); return; }
         url = URL.createObjectURL(await res.blob());
         sampleCache[voice] = url;
       }
       if(myToken !== speakSeq){ stop(); return; } // tocó otra voz: descartar
+      leinAudio.onplaying = null;
       leinAudio.src = url; leinAudio.currentTime = 0;
       leinAudio.onplay   = stop;  // quita el "cargando" en cuanto suena
       leinAudio.onended  = stop;
@@ -1064,6 +1532,9 @@
       await leinAudio.play().catch(stop);
     }catch(e){ stop(); }
   }
+  document.getElementById("voiceBtn").onclick = ()=>{
+    document.getElementById("voiceSheet").classList.toggle("show");
+  };
 
   fetch(API + "/api/health").then(r=>r.json()).then(h=>{
     // Si no hay transcripción, ocultar el micrófono (queda solo escribir).
@@ -1072,27 +1543,30 @@
     if (h.dailyLimitMinutes > 30){
       const dr = document.getElementById("devRecap");
       dr.style.display = "grid";
-      dr.onclick = ()=>{ if(!busy && !placementMode){ recapDone = true; sendToLein("", false, true); } };
+      dr.onclick = ()=>{ if(!busy && !placementMode && convoStarted){ recapDone = true; sendToLein("", false, true); } };
     }
     if(h.ttsProvider === "openai"){
-      precacheWelcome(); // pre-genera el saludo para que suene al instante
-      const vp = document.getElementById("voicePick");
-      vp.classList.add("show");
-      vp.querySelectorAll("button").forEach(b=>{
+      // El saludo de bienvenida solo lo oye quien entra por primera vez (elige nivel).
+      if (!(savedLevel && LEVEL_LABELS[savedLevel])) precacheWelcome();
+      const vbtn = document.getElementById("voiceBtn");
+      vbtn.style.display = "grid";
+      const vs = document.getElementById("voiceSheet");
+      vs.querySelectorAll("button").forEach(b=>{
         if(b.dataset.voice === selectedVoice) b.classList.add("sel");
         b.onclick = ()=>{
           selectedVoice = b.dataset.voice;
           localStorage.setItem("lein_voice", selectedVoice);
-          vp.querySelectorAll("button").forEach(x=>x.classList.toggle("sel", x===b)); // resalta YA
+          vs.querySelectorAll("button").forEach(x=>x.classList.toggle("sel", x===b)); // resalta YA
           playSample(selectedVoice, b);
         };
       });
+    } else {
+      serverTTS = false;
     }
   }).catch(()=>{});
 
   // Sonido corto "fun" por palabra, como mini-archivo de audio (suena en iPhone
   // aunque tenga el interruptor de silencio, igual que la voz).
-  let _actx; // (se conserva por compatibilidad; ya no se usa para el sonido)
   function makeBeepUrl(freq, ms){
     const sr=8000, n=Math.floor(sr*ms/1000), buf=new ArrayBuffer(44+n*2), dv=new DataView(buf);
     let p=0; const w=s=>{ for(let i=0;i<s.length;i++) dv.setUint8(p++, s.charCodeAt(i)); };
@@ -1125,7 +1599,6 @@
   let firstTouchDone=false;
   window.addEventListener("pointerdown", ()=>{
     if(firstTouchDone) return; firstTouchDone=true;
-    try{ if(_actx && _actx.state==="suspended") _actx.resume(); }catch(e){}
     try{ unlockAudio(); }catch(e){}
     if(document.getElementById("welcome").classList.contains("active")) dropTitle();
   }, { once:true });
@@ -1143,6 +1616,7 @@
   if(window.visualViewport){ window.visualViewport.addEventListener("resize", setAppHeight); }
 
   // estado inicial
+  setupWelcome();
   renderBrain();
   dropTitle();
   leinState("idle");
