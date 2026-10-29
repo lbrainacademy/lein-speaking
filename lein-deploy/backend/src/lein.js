@@ -17,7 +17,9 @@ export function getModel() {
 // Cliente perezoso: se crea en el primer uso, ya con la llave del .env cargada.
 let _client = null;
 function getClient() {
-  if (!_client) _client = new Anthropic();
+  // timeout corto + 1 reintento: si Claude se cuelga, el alumno ve "Reintentar"
+  // en segundos, en vez de quedarse esperando minutos.
+  if (!_client) _client = new Anthropic({ timeout: 15000, maxRetries: 1 });
   return _client;
 }
 
@@ -37,15 +39,24 @@ const NATURAL_SPEECH =
 
 // Corrección suave y explícita (campo "correction" aparte), para TODOS los niveles
 // de charla (no en el placement). Hace que el estudiante NOTE su error.
+// Decisión del dueño (basada en investigación de feedback correctivo): corrección
+// EXPLÍCITA en voz, pero UNA sola por turno, con fórmula variada, celebrando los
+// aciertos y pidiendo a veces que lo repita. Esta regla MANDA sobre las secciones
+// "CORRECTION" de cada cerebro.
 const CORRECTION_INSTRUCTION =
-`GENTLE CORRECTION (use the separate "correction" field):
-- When the student makes a meaningful English mistake, set "correction" to a SHORT, friendly note showing the better version, phrased as a natural sentence Lein could SAY OUT LOUD, e.g. "You said 'I goed', but we say 'I went'." or "Instead of 'I have 25 years', say 'I'm 25 years old'."
-- Do NOT use arrows or symbols (no "->"). Write it as natural spoken words.
-- Pick ONLY the single most useful fix per turn — never list several. Never give a grammar lecture or use grammar terms; just show the natural correct form.
-- CRITICAL: Correct ONLY a mistake in the student's MOST RECENT message. NEVER repeat, re-mention, or carry forward a correction you already gave in an earlier turn. Each "correction" stands alone for the current message. If their latest message has no new notable mistake, set "correction" to null — do NOT recycle an old one.
-- For beginners (A1/A1+), keep it extra gentle and simple. Write the correction in ENGLISH ONLY — do NOT add Spanish translations (the separate "hint" field already provides Spanish help when needed).
-- If there is no notable mistake, set "correction" to null.
-- Keep your spoken "say" warm and flowing. The app reads the correction out loud FIRST (right after the student speaks) and THEN your "say". So write "say" so it flows naturally as the part that comes AFTER a quick correction — do NOT repeat the correction inside "say".`;
+`GENTLE EXPLICIT CORRECTION (this rule overrides any other correction rule above):
+- When the student makes a meaningful English mistake, correct it explicitly using the separate fields:
+  - "correction": ONE short, friendly spoken line with the better version, e.g. "Small fix: we say 'I went', not 'I goed'." The app reads it out loud FIRST, then your "say".
+  - "fix_said": the student's wrong words, copied short (just the wrong part or short phrase, max ~8 words).
+  - "fix_better": the natural correct version of that same part (max ~8 words).
+- ONE fix per turn, the most useful one for real communication (word order, wrong verb/tense, wrong word, a "Spanish-style" phrase like "I have 25 years"). IGNORE minor details: small article slips, missing "s", punctuation, capitalization, accent, or anything that doesn't hurt understanding. Never list several, and never join two fixes with "and" — if there are two mistakes, pick only the more useful one.
+- VARY the opening of "correction" every time. Rotate naturally between forms like: "Quick tip: ...", "Small fix: ...", "Just so you know, we say ...", "Almost! We say ...", "Here's a more natural way: ...". Never use the same opener twice in a row.
+- No grammar lectures, no grammar terms, no arrows or symbols. Natural spoken words only, in ENGLISH (no Spanish).
+- Now and then (about one correction in three), make "say" ONLY a short invitation to say the corrected sentence again, e.g. "Can you say it again?" — in that turn do NOT also ask a conversation question.
+- When the student repeats it (right or close enough): react in 2-4 words ("Perfect!", "Yes, that's it!"), then CONTINUE the conversation exactly where it was — one new natural follow-up question on the same topic, building on what they originally told you. NEVER go back, never re-ask your earlier question, never ask them to repeat the same thing twice. If the repeat is still not perfect, don't correct it again — just praise the effort and keep chatting.
+- CELEBRATE: if the student now correctly uses something you corrected earlier (or repeats it right after you asked), set "correction" to null and start "say" with a short, specific celebration ("Yes! 'I went' — perfect!").
+- Correct ONLY the student's MOST RECENT message. NEVER repeat or recycle an earlier correction. If there is no meaningful new mistake, set "correction", "fix_said" and "fix_better" to null.
+- Write "say" so it flows naturally AFTER the correction — do NOT repeat the correction inside "say".`;
 
 // Anti-deriva: mantener a Lein consistente turno a turno (evita que "se vuelva
 // loco" tras varios turnos: re-saludar, repetir preguntas, cambiar de tema/nivel).
@@ -105,6 +116,8 @@ const LEIN_SCHEMA = {
     say: { type: "string" },
     hint: { anyOf: [{ type: "string" }, { type: "null" }] },
     correction: { anyOf: [{ type: "string" }, { type: "null" }] },
+    fix_said: { anyOf: [{ type: "string" }, { type: "null" }] },
+    fix_better: { anyOf: [{ type: "string" }, { type: "null" }] },
     studentName: { anyOf: [{ type: "string" }, { type: "null" }] },
     suggestions: { type: "array", items: { type: "string" } },
     scene: { anyOf: [{ type: "string", enum: SCENE_KEYS }, { type: "null" }] },
@@ -118,7 +131,7 @@ const LEIN_SCHEMA = {
   },
   // studentName y correction son obligatorios (pueden ser null) para que el modelo
   // SIEMPRE los considere: así captura el nombre en cuanto lo oye y no lo omite.
-  required: ["say", "hint", "suggestions", "studentName", "correction"],
+  required: ["say", "hint", "suggestions", "studentName", "correction", "fix_said", "fix_better"],
   additionalProperties: false,
 };
 
@@ -140,8 +153,15 @@ const NAME_CAPTURE =
 // Mensaje (oculto) que abre la sesión, según el nivel y si ya sabemos el nombre.
 // - Si conocemos el nombre: saludo de "bienvenida de nuevo", SIN volver a preguntarlo.
 // - A1 / A1+: saludo simple. A2 en adelante: + invitar a contar/practicar.
-function openingMessage(level, knownName) {
+// - returning: el alumno tocó "Seguir practicando" (ya vino antes). NUNCA se le
+//   pide el nombre otra vez, aunque no lo tengamos guardado.
+function openingMessage(level, knownName, returning = false) {
   const low = level === "A1" || level === "A1+";
+  if (!knownName && returning) {
+    return low
+      ? "[The session is starting. The student is coming back to practice. Warmly welcome them back in very simple English and ask one easy, concrete question (for example about their day). Do NOT ask their name.]"
+      : "[The session is starting. The student is coming back to practice. Warmly welcome them back at their level and ask one easy, concrete question about their day or week. Do NOT ask their name. One natural turn ending in a question.]";
+  }
   if (knownName) {
     return low
       ? `[The session is starting. The student's name is ${knownName}. Warmly welcome ${knownName} back by name in very simple English, then ask one easy question to get going. Do NOT ask their name.]`
@@ -152,6 +172,16 @@ function openingMessage(level, knownName) {
     : "[The session is starting now. Greet the student warmly in English at their level, ask their name, and invite them to tell you a little about themselves so you can get to know them. Keep it to one natural turn ending in a question.]";
 }
 
+// Tema elegido por el alumno ("🎯 Tengo un tema"). Puede venir en español.
+function topicBlock(topic) {
+  return `TODAY'S TOPIC: The student chose to talk about: "${topic}". They may have written it in Spanish — understand it, but always speak English at their level. Keep the whole conversation about this topic with practical, everyday questions. Stay on it unless the student clearly changes it.`;
+}
+function topicOpening(level, knownName, topic) {
+  const low = level === "A1" || level === "A1+";
+  const who = knownName ? ` The student's name is ${knownName}; greet them by name.` : "";
+  return `[The session is starting.${who} The student wants to talk about: "${topic}". Greet them warmly in one short line${low ? " in very simple English" : ""}, react with interest to the topic, and ask ONE easy, concrete first question about it. Do NOT ask their name.]`;
+}
+
 // Mensaje (oculto) para el repaso final: Lein recapitula errores y pide repetir.
 function recapMessage(errors) {
   const list = (errors && errors.length)
@@ -160,7 +190,8 @@ function recapMessage(errors) {
   return `[Only about 1 minute of practice left. Warmly wrap up: start with something like "Let's stop here and practice a few things you got wrong today." Then briefly say the main mistakes with their correct versions and ask the student to repeat the corrected sentence(s) out loud. Be warm, quick and encouraging — keep it short since time is almost up. Today's corrections: ${list}. End by inviting them to say the corrected sentence(s) back.]`;
 }
 
-export async function leinTurn({ text, history = [], level = "A1", mission = null, placement = false, opening = false, recap = false, errors = [], studentName = "" }) {
+export async function leinTurn({ text, history = [], level = "A1", mission = null, placement = false, opening = false, recap = false, errors = [], studentName = "", topic = "", returning = false }) {
+  topic = String(topic || "").replace(/[\[\]"]/g, " ").trim().slice(0, 160);
   // 1. Elegir el cerebro base.
   let system = placement ? PLACEMENT_BRAIN : getBrain(level);
 
@@ -204,6 +235,11 @@ export async function leinTurn({ text, history = [], level = "A1", mission = nul
     system = system + "\n\n" + LEAD_INSTRUCTION;
   }
 
+  // 2b-bis. Tema elegido por el alumno.
+  if (!placement && topic) {
+    system = system + "\n\n" + topicBlock(topic);
+  }
+
   // 2c. (Las imágenes de escena se desactivaron; preferimos el avatar animado.)
   //     Dejamos el campo "scene" en el esquema por compatibilidad, pero ya no
   //     se lo pedimos al modelo (ahorra tokens).
@@ -211,7 +247,8 @@ export async function leinTurn({ text, history = [], level = "A1", mission = nul
   // 3. Construir los mensajes: historial previo + el turno nuevo del estudiante.
   //    En la apertura (charla normal) usamos un saludo estándar por nivel.
   const userText = recap ? recapMessage(errors)
-                 : (opening && !placement) ? openingMessage(level, studentName)
+                 : (opening && !placement && topic) ? topicOpening(level, studentName, topic)
+                 : (opening && !placement) ? openingMessage(level, studentName, returning)
                  : text;
   const messages = [
     ...history.map((m) => ({ role: m.role, content: m.content })),
@@ -219,6 +256,7 @@ export async function leinTurn({ text, history = [], level = "A1", mission = nul
   ];
 
   // 4. Llamar a Claude.
+  const t0 = Date.now();
   const response = await getClient().messages.create({
     model: getModel(),
     max_tokens: 700, // margen para que el JSON NUNCA se corte (texto+corrección+ideas); Lein igual habla corto por BREVITY
@@ -237,6 +275,8 @@ export async function leinTurn({ text, history = [], level = "A1", mission = nul
     // Salida estructurada: Claude DEBE devolver JSON que cumpla el esquema.
     output_config: { format: { type: "json_schema", schema: LEIN_SCHEMA } },
   });
+
+  console.log(`[timing] claude=${Date.now() - t0}ms (${getModel()})`);
 
   // 5. Con structured outputs, el primer bloque de texto es JSON válido.
   const textBlock = response.content.find((b) => b.type === "text");

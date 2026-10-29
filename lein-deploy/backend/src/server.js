@@ -16,7 +16,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { leinTurn, getModel } from "./lein.js";
 import { getStatus, addActiveSeconds, DAILY_LIMIT_SECONDS } from "./usage.js";
-import { synthesize, hasTTS } from "./tts.js";
+import { synthesize, hasTTS, startJob, pipeJob, cleanForSpeech } from "./tts.js";
 import { transcribe, hasSTT } from "./stt.js";
 import { claudeCostUSD, ttsCostUSD, sttCostUSD, addCost, getDailyTotals, round4, today } from "./cost.js";
 
@@ -34,6 +34,7 @@ const MIME = {
 };
 
 const PORT = Number(process.env.PORT) || 8787;
+const GRACE_SECONDS = 90; // margen para terminar el último turno al llegar al tope
 const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS || "*";
 
 // --- CORS: el frontend vivirá en otra URL, así que hay que permitir el origen.
@@ -203,7 +204,10 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 400, { error: "no_audio", message: "No llegó audio." });
     }
     try {
-      const text = await transcribe(buf, req.headers["content-type"]);
+      const anyLanguage = url.searchParams.get("lang") === "auto"; // tema: puede venir en español
+      let context = "";
+      try { context = decodeURIComponent(req.headers["x-lein-context"] || ""); } catch {}
+      const text = await transcribe(buf, req.headers["content-type"], { anyLanguage, context });
       // Medidor: costo (estimado) de la transcripción, atribuido al estudiante.
       const sid = url.searchParams.get("studentId") || "anon";
       addCost(sid, sttCostUSD(buf.length), "stt");
@@ -241,6 +245,31 @@ const server = http.createServer(async (req, res) => {
       console.error("[/api/tts] Error:", err?.message || err);
       return sendJson(res, 502, { error: "tts_error", message: err?.message || "Error de voz." });
     }
+  }
+
+  // Voz en STREAMING, paso 1: arranca la generación y devuelve un id.
+  if (req.method === "POST" && url.pathname === "/api/tts/start") {
+    if (!hasTTS()) {
+      return sendJson(res, 200, { error: "no_tts", message: "Sin OPENAI_API_KEY; usar voz del navegador." });
+    }
+    let payload;
+    try {
+      const raw = await readBody(req);
+      payload = raw ? JSON.parse(raw) : {};
+    } catch {
+      return sendJson(res, 400, { error: "bad_json" });
+    }
+    const { level = "A1", voice, studentId = "anon" } = payload;
+    const text = cleanForSpeech(payload.text);
+    if (!text) return sendJson(res, 400, { error: "missing_text" });
+    addCost(studentId, ttsCostUSD(text), "tts");
+    return sendJson(res, 200, { id: startJob(text, level, voice) });
+  }
+
+  // Voz en STREAMING, paso 2: el navegador reproduce mientras llega.
+  if (req.method === "GET" && url.pathname.startsWith("/api/tts/stream/")) {
+    const id = url.pathname.slice("/api/tts/stream/".length);
+    return pipeJob(id, req, res);
   }
 
   // Estado de tiempo de un estudiante (cuánto le queda hoy).
@@ -318,15 +347,20 @@ const server = http.createServer(async (req, res) => {
       recap = false,
       errors = [],
       studentName = "",
+      topic = "",
+      voice = null,
+      returning = false,
     } = payload;
 
     // Tope diario por estudiante (backstop del servidor: aunque el frontend
     // falle o recarguen la página, aquí se respeta). Si no hay studentId no se
     // puede identificar, así que no se aplica tope (en producción Moodle siempre
     // lo manda por la URL).
+    // Margen de gracia: si el tiempo se acabó mientras el alumno hablaba, su
+    // último turno igual recibe respuesta (no se corta a mitad de frase).
     if (studentId) {
       const status = getStatus(studentId);
-      if (status.blocked) {
+      if (status.usedSeconds >= status.limitSeconds + GRACE_SECONDS) {
         return sendJson(res, 200, {
           limitReached: true,
           message: "Llegaste a tu práctica de hoy. ¡Nos vemos mañana! 👋",
@@ -362,7 +396,22 @@ const server = http.createServer(async (req, res) => {
         recap,
         errors,
         studentName,
+        topic,
+        returning: Boolean(returning),
       });
+
+      // Voz en streaming: arrancamos la voz YA (corrección + respuesta) para que
+      // empiece a sonar apenas el navegador la pida.
+      if (hasTTS()) {
+        const isPlacementTurn = placement;
+        const spoken = cleanForSpeech(
+          (!recap && !isPlacementTurn && result.correction ? result.correction + " ... " : "") + (result.say || "")
+        );
+        if (spoken) {
+          result.ttsId = startJob(spoken, placement ? "PLACEMENT" : level, voice || undefined);
+          addCost(studentId || "anon", ttsCostUSD(spoken), "tts");
+        }
+      }
       // Adjuntamos el tiempo restante de hoy para que el frontend lo muestre.
       if (studentId) result._timeStatus = getStatus(studentId);
 

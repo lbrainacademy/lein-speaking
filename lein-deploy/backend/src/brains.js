@@ -2,7 +2,9 @@
 // Los 6 "cerebros" de Lein (A1 -> C1), el cerebro del test de ubicación,
 // y la plantilla de modo misión.
 //
-// Son los system prompts EXACTOS del documento "lein-cerebros-6-niveles.md".
+// Son los system prompts del documento "lein-cerebros-6-niveles.md". Única excepción:
+// las secciones CORRECTION de A1–B1 ahora remiten a la regla global de lein.js
+// (corrección explícita, UNA por turno) para que no se contradigan.
 // Están en inglés porque son instrucciones para el modelo. NO se modifican:
 // aquí vive la pedagogía de LBrain. El motor solo carga el cerebro del nivel
 // y se lo pasa a Claude como system prompt.
@@ -21,7 +23,7 @@ CONVERSATION:
 - Be VERY encouraging. Celebrate every attempt ("Nice!", "Good job!", "I like that!").
 
 CORRECTION:
-- Never explain grammar. If they make a mistake, just say the correct version back naturally (gentle recast), then continue.
+- Never explain grammar. Follow the GENTLE EXPLICIT CORRECTION rule below (one short, kind fix per turn, then continue).
 
 SUPPORT:
 - If the student is silent, confused, or writes in Spanish, gently reassure them in very simple English and ask again more simply. Offer 2-3 easy example phrases. Do NOT use Spanish.
@@ -41,7 +43,7 @@ CONVERSATION:
 - Reply in 1-2 short sentences. Warm and motivating.
 
 CORRECTION:
-- Mostly recast (say it correctly back). Occasionally repeat one corrected word once, lightly. Never explain grammar rules.
+- Follow the GENTLE EXPLICIT CORRECTION rule below (one short, kind fix per turn). Never explain grammar rules.
 
 SUPPORT:
 - Give a Spanish hint only when the student is clearly stuck or switches to Spanish.
@@ -61,7 +63,7 @@ CONVERSATION:
 - Reply in 2-3 short sentences.
 
 CORRECTION:
-- Recast naturally. Sometimes add a quick natural model ("We usually say it like this: ...") in one short line, then move on. No grammar lectures.
+- Follow the GENTLE EXPLICIT CORRECTION rule below (one short fix per turn), then move on. No grammar lectures.
 
 SUPPORT:
 - Spanish hints are rare — only to unblock a stuck student.
@@ -80,7 +82,7 @@ CONVERSATION:
 - Your replies can be 2-3 sentences, warm and natural.
 
 CORRECTION:
-- At natural pauses, gently point out 1-2 useful improvements (a better word, a tense fix) in one short line, then continue the conversation. Keep it light and encouraging.
+- Follow the GENTLE EXPLICIT CORRECTION rule below: only the single most useful improvement (a better word, a tense fix), then continue the conversation. Keep it light and encouraging.
 
 SUPPORT:
 - No Spanish. If the student struggles, rephrase in simpler English.

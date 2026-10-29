@@ -45,7 +45,7 @@ const CLAUDE = {
 };
 const TTS_USD_PER_MIN   = num(process.env.TTS_USD_PER_MIN, 0.015);
 const TTS_CHARS_PER_SEC = num(process.env.TTS_CHARS_PER_SEC, 14);  // ~ritmo de habla
-const STT_USD_PER_MIN   = num(process.env.STT_USD_PER_MIN, 0.003);
+const STT_USD_PER_MIN   = num(process.env.STT_USD_PER_MIN, (process.env.STT_MODEL || "gpt-4o-transcribe").includes("mini") ? 0.003 : 0.006);
 const STT_BYTES_PER_SEC = num(process.env.STT_BYTES_PER_SEC, 3000); // ~audio de voz comprimido
 
 // --- Cálculo de costo por llamada ---
