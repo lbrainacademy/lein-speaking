@@ -1137,11 +1137,14 @@
       }
 
       lastSay = data.say || "";
-      history.push({role:"assistant", content:lastSay});
 
       const hasFix = !wasPlacement && !isRecap && !!data.correction;
       // Lo que se oye: primero la corrección, luego la respuesta.
       const toSpeak = hasFix ? (data.correction + " ... " + lastSay) : lastSay;
+      // El historial guarda TODO lo que Lein dijo, corrección incluida. Si solo
+      // guardábamos la pregunta, en el turno siguiente Claude veía el error viejo
+      // "sin corregir" y lo volvía a corregir en vez del error nuevo.
+      history.push({role:"assistant", content: hasFix ? (data.correction + " " + lastSay) : lastSay});
 
       if (hasFix){
         const fix = { said: data.fix_said || "", better: data.fix_better || "", text: data.correction };
