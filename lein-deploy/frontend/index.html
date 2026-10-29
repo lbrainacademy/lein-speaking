@@ -373,6 +373,7 @@
     <div class="welcome-more" id="welcomeMore">
       <button class="ghostbtn" id="topicBtnWelcome">🎯 Tengo un tema</button>
       <button class="link" id="changeLevelBtn">Cambiar nivel</button>
+      <button class="link" id="notMeBtn" style="display:none"></button>
     </div>
     <p class="lead" style="font-size:14px;color:#8a7c6e" id="browserWarn"></p>
   </section>
@@ -413,8 +414,8 @@
     </div>
     <div class="voicesheet" id="voiceSheet">
       <div class="vs-label">Elige la voz de Lein (tócala para oírla):</div>
-      <button data-voice="shimmer">Shimmer ♀</button>
       <button data-voice="nova">Nova ♀</button>
+      <button data-voice="shimmer">Shimmer ♀</button>
       <button data-voice="coral">Coral ♀</button>
       <button data-voice="ash">Ash ♂</button>
       <button data-voice="echo">Echo ♂</button>
@@ -646,8 +647,11 @@
   // --- Voz premium del servidor (igual en iPhone/Android/PC) con respaldo al navegador ---
   let serverTTS = true;        // se apaga solo si el backend NO tiene voz premium
   let audioUnlocked = false;
-  let selectedVoice = localStorage.getItem("lein_voice") || "shimmer"; // voz americana por defecto
-  if (selectedVoice === "fable") selectedVoice = "shimmer"; // Fable es británica: ya no se ofrece
+  // Voz por defecto: Nova (elegida por el dueño). Clave nueva "lein_voice2" para
+  // que TODOS pasen a Nova una vez; si el alumno elige otra voz, se respeta.
+  const VOICE_KEY = "lein_voice2";
+  let selectedVoice = localStorage.getItem(VOICE_KEY) || "nova";
+  if (selectedVoice === "fable") selectedVoice = "nova"; // Fable es británica: ya no se ofrece
   let speakSeq = 0; // token: solo el audio más reciente suena (evita encimar voces)
   let welcomeUrl = null; // saludo pre-generado para que suene al instante
   const leinAudio = new Audio();
@@ -797,7 +801,22 @@
       sb.textContent = "▶ ¡Empezar!";
       more.style.display = "none";
     }
+    // Sin ID en el link (no viene de Moodle), Lein reconoce al alumno por el
+    // TELÉFONO. Si otra persona usa el mismo teléfono, puede empezar como nueva.
+    const notMe = document.getElementById("notMeBtn");
+    if (!params.get("studentId") && (knownName || savedLevel)) {
+      notMe.textContent = knownName ? `¿No eres ${knownName}? Empieza como persona nueva` : "¿Eres otra persona? Empieza como nueva";
+      notMe.style.display = "inline-block";
+      more.style.display = "flex";
+    } else {
+      notMe.style.display = "none";
+    }
   }
+  document.getElementById("notMeBtn").onclick = ()=>{
+    // Nuevo alumno en este teléfono: ID nuevo; su nombre, nivel y progreso empiezan de cero.
+    try{ localStorage.setItem("lein_sid", "test-" + Math.random().toString(36).slice(2, 9)); }catch(e){}
+    location.reload();
+  };
   document.getElementById("startBtn").onclick = ()=>{
     unlockAudio(); // el toque desbloquea el audio en móviles
     if (savedLevel && LEVEL_LABELS[savedLevel]) {
@@ -1151,8 +1170,8 @@
         sessionCorrections.push(fix);
         saveFix(fix);
       }
-      // Con texto: el mensaje aparece YA. Solo voz: aparece cuando Lein EMPIEZA a
-      // hablar (mientras tanto sigue "Lein está pensando…").
+      // El mensaje aparece cuando Lein EMPIEZA a hablar (texto y voz juntos), como
+      // en una conversación real. Mientras tanto sigue "Lein está pensando…".
       let revealed = false, leinBubble = null;
       const reveal = ()=>{
         if (revealed) return; revealed = true;
@@ -1164,7 +1183,6 @@
         if (!wasPlacement) addSuggestions(data.suggestions);
       };
       leinSpeaking = true;
-      if (textOn) reveal();
       setTimeout(reveal, 8000); // respaldo si la voz no arranca
       const onVoiceStart = ()=>{ reveal(); leinState("talking"); setStatus("Lein está hablando…"); };
       const afterVoice = ()=>{
@@ -1341,7 +1359,7 @@
       // mitad de frase. Si ya terminó, puede tocar ⏹ para enviar al instante.
       const SILENCE_MS = (level==="A1" || level==="A1+" || placementMode) ? 2200
                        : (level==="A2" || level==="B1") ? 1800 : 1400;
-      let floor=null, spoke=false, lastLoud=0, speechLvl=0, noiseLvl=null, sm=0;
+      let floor=null, spoke=false, lastLoud=0, speechLvl=0, noiseLvl=null, sm=0, loudMs=0;
       vadInt=setInterval(()=>{
         if(!recording) return;
         an.getByteTimeDomainData(data);
@@ -1359,7 +1377,9 @@
         // antes ese ruido reiniciaba la cuenta del silencio y nunca cortaba).
         const loudTh = Math.max(speakTh, speechLvl*0.3, noiseLvl*1.7);
         speechLvl = Math.max(speechLvl*0.997, spoke || rms>speakTh ? rms : 0); // tu voz: sube rápido, baja lento
-        if(rms>loudTh){ spoke=true; lastLoud=now; }
+        // Voz real = al menos ~0,3 s sumados por encima del umbral (un golpe o un
+        // roce del teléfono no cuenta como que hablaste).
+        if(rms>loudTh){ loudMs += 60; lastLoud=now; if(loudMs >= 300) spoke=true; }
         if(!spoke || rms < speechLvl*0.5) noiseLvl = noiseLvl*0.85 + rms*0.15; // ruido actual
         if(spoke && rms<=loudTh && now-lastLoud>SILENCE_MS){ stopRecording(); return; } // callado -> enviar
         // 8 s sin voz: no mandamos audio vacío (evita respuestas a cosas que no dijo).
@@ -1548,7 +1568,14 @@
       dr.style.display = "grid";
       dr.onclick = ()=>{ if(!busy && !placementMode && convoStarted){ recapDone = true; sendToLein("", false, true); } };
     }
-    if(h.ttsProvider === "openai"){
+    if(h.ttsProvider && h.ttsProvider !== "browser"){
+      // Con ElevenLabs el servidor manda sus voces: rehacemos el selector con ellas.
+      if (Array.isArray(h.voices) && h.voices.length){
+        const vs0 = document.getElementById("voiceSheet");
+        vs0.querySelectorAll("button").forEach(b=>b.remove());
+        h.voices.forEach(v=>{ const b=document.createElement("button"); b.dataset.voice=v.id; b.textContent=v.label; vs0.appendChild(b); });
+        if (!h.voices.some(v=>v.id===selectedVoice)) selectedVoice = h.voices[0].id;
+      }
       // El saludo de bienvenida solo lo oye quien entra por primera vez (elige nivel).
       if (!(savedLevel && LEVEL_LABELS[savedLevel])) precacheWelcome();
       const vbtn = document.getElementById("voiceBtn");
@@ -1558,7 +1585,7 @@
         if(b.dataset.voice === selectedVoice) b.classList.add("sel");
         b.onclick = ()=>{
           selectedVoice = b.dataset.voice;
-          localStorage.setItem("lein_voice", selectedVoice);
+          localStorage.setItem(VOICE_KEY, selectedVoice);
           vs.querySelectorAll("button").forEach(x=>x.classList.toggle("sel", x===b)); // resalta YA
           playSample(selectedVoice, b);
         };
