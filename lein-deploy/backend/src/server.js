@@ -372,6 +372,7 @@ const server = http.createServer(async (req, res) => {
       topic = "",
       voice = null,
       returning = false,
+      repeating = false,
     } = payload;
 
     // Tope diario por estudiante (backstop del servidor: aunque el frontend
@@ -420,6 +421,7 @@ const server = http.createServer(async (req, res) => {
         studentName,
         topic,
         returning: Boolean(returning),
+        repeating: Boolean(repeating),
       });
 
       // Voz en streaming: arrancamos la voz YA (corrección + respuesta) para que

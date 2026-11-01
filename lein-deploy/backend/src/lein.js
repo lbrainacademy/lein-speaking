@@ -52,7 +52,7 @@ const CORRECTION_INSTRUCTION =
 - ONE fix per turn, the most useful one for real communication (word order, wrong verb/tense, wrong word, a "Spanish-style" phrase like "I have 25 years"). IGNORE minor details: small article slips, missing "s", punctuation, capitalization, accent, or anything that doesn't hurt understanding. Never list several, and never join two fixes with "and" — if there are two mistakes, pick only the more useful one.
 - VARY the opening of "correction" every time. Rotate naturally between forms like: "Quick tip: ...", "Small fix: ...", "Just so you know, we say ...", "Almost! We say ...", "Here's a more natural way: ...". Never use the same opener twice in a row.
 - No grammar lectures, no grammar terms, no arrows or symbols. Natural spoken words only, in ENGLISH (no Spanish).
-- REPEAT PRACTICE: about one correction in three, invite the student to say the corrected sentence out loud. Set "repeat_target" to that short, correct sentence (max ~10 words, e.g. "I went to the park.") and make "say" a short, clear invitation that INCLUDES it, e.g. "Your turn! Say it with me: 'I went to the park.'" In that turn do NOT ask another question. In every other turn set "repeat_target" to null.
+- REPEAT PRACTICE: EVERY time you correct, invite the student to say the corrected sentence out loud. Set "repeat_target" to that short, correct sentence (max ~12 words, e.g. "I went to the park with my kids.") and make "say" a short, clear invitation that INCLUDES it, e.g. "Your turn! Say it with me: 'I went to the park.'" In that turn do NOT ask another question. When there is no correction, set "repeat_target" to null.
 - When the student repeats it (right or close enough): set "correction" to null, react in 2-4 words ("Perfect!", "Yes, that's it!"), then CONTINUE the conversation exactly where it was — one new natural follow-up question on the same topic, building on what they originally told you. Never go back, never re-ask an earlier question, never ask them to repeat the same thing twice. If the repeat is still not perfect, do NOT correct it again — praise the effort and keep chatting.
 - CELEBRATE: if the student now correctly uses something you corrected earlier (or repeats it right after you asked), set "correction" to null and start "say" with a short, specific celebration ("Yes! 'I went' — perfect!").
 - Correct ONLY the student's MOST RECENT message. NEVER repeat or recycle an earlier correction. If there is no meaningful new mistake, set "correction", "fix_said" and "fix_better" to null.
@@ -185,6 +185,26 @@ function correctionMatches(fixSaid, text) {
   return hits / said.length >= 0.6;
 }
 
+// Arma la frase a repetir: la oración del alumno con la parte corregida
+// ("I goed to the park" + goed→went = "I went to the park."). Si es larga o no se
+// encuentra la parte, usa solo la forma correcta.
+function buildRepeatTarget(text, said, better) {
+  const b = String(better || "").replace(/\.\.\./g, " ").trim();
+  if (!b) return null;
+  const s = String(said || "").replace(/\.\.\./g, " ").trim();
+  const src = String(text || "").trim();
+  if (s && src) {
+    const i = src.toLowerCase().indexOf(s.toLowerCase());
+    if (i >= 0) {
+      let out = (src.slice(0, i) + b + src.slice(i + s.length)).trim();
+      out = out.charAt(0).toUpperCase() + out.slice(1);
+      if (!/[.!?]$/.test(out)) out += ".";
+      if (out.split(/\s+/).length <= 14) return out;
+    }
+  }
+  return b.charAt(0).toUpperCase() + b.slice(1);
+}
+
 // Frases para invitar a repetir la forma correcta (varían para no sonar robot).
 const REPEAT_INVITES = [
   "Your turn! Say it with me:",
@@ -225,7 +245,7 @@ function recapMessage(errors) {
   return `[Only about 1 minute of practice left. Warmly wrap up: start with something like "Let's stop here and practice a few things you got wrong today." Then briefly say the main mistakes with their correct versions and ask the student to repeat the corrected sentence(s) out loud. Be warm, quick and encouraging — keep it short since time is almost up. Today's corrections: ${list}. End by inviting them to say the corrected sentence(s) back.]`;
 }
 
-export async function leinTurn({ text, history = [], level = "A1", mission = null, placement = false, opening = false, recap = false, errors = [], studentName = "", topic = "", returning = false }) {
+export async function leinTurn({ text, history = [], level = "A1", mission = null, placement = false, opening = false, recap = false, errors = [], studentName = "", topic = "", returning = false, repeating = false }) {
   topic = String(topic || "").replace(/[\[\]"]/g, " ").trim().slice(0, 160);
   // 1. Elegir el cerebro base.
   let system = placement ? PLACEMENT_BRAIN : getBrain(level);
@@ -346,7 +366,15 @@ export async function leinTurn({ text, history = [], level = "A1", mission = nul
   // "Repite la frase": solo en charla normal y solo junto a una corrección. Si
   // la hay, "say" ES la invitación a repetir (antes a veces marcaba la frase
   // pero preguntaba otra cosa, y el alumno no sabía qué hacer).
-  if (placement || recap || opening || !data.correction) data.repeat_target = null;
+  // Si el alumno está REPITIENDO la frase que Lein pidió, no se le vuelve a corregir
+  // ni a pedir repetir: se le felicita y la charla sigue (eso pide el prompt).
+  if (repeating) { data.correction = null; data.fix_said = null; data.fix_better = null; }
+  if (placement || recap || opening || repeating || !data.correction) data.repeat_target = null;
+  // Promesa del anuncio: después de CADA corrección, Lein pide repetir. Si el modelo
+  // no puso la frase, la armamos: lo que dijo el alumno con la parte corregida.
+  if (data.correction && !data.repeat_target && !placement && !recap && !opening && !repeating) {
+    data.repeat_target = buildRepeatTarget(text, data.fix_said, data.fix_better);
+  }
   if (data.repeat_target) {
     const target = String(data.repeat_target).replace(/["“”]/g, "").trim();
     data.repeat_target = target;
