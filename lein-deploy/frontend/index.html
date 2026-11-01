@@ -1396,8 +1396,8 @@
       // Principiantes hacen pausas más largas mientras piensan.
       // Cuánto silencio esperar antes de enviar: los adultos se quedan pensando a
       // mitad de frase. Si ya terminó, puede tocar ⏹ para enviar al instante.
-      const SILENCE_MS = (level==="A1" || level==="A1+" || placementMode) ? 2200
-                       : (level==="A2" || level==="B1") ? 1800 : 1400;
+      const SILENCE_MS = (level==="A1" || level==="A1+" || placementMode) ? 2500
+                       : (level==="A2" || level==="B1") ? 2000 : 1700;
       let floor=null, spoke=false, lastLoud=0, speechLvl=0, noiseLvl=null, sm=0, loudMs=0, maxRaw=0;
       vadInt=setInterval(()=>{
         if(!recording) return;
@@ -1423,7 +1423,9 @@
         // "Hablando" = por encima del ruido inicial, de una parte de TU voz y del
         // ruido ACTUAL del cuarto (el micrófono sube el volumen solo cuando callas;
         // antes ese ruido reiniciaba la cuenta del silencio y nunca cortaba).
-        const loudTh = Math.max(speakTh, speechLvl*0.3, noiseLvl*1.7);
+        // 0.12 (antes 0.3): las palabras suaves y los finales de frase SÍ cuentan como
+        // voz. Con 0.3 se tomaban como silencio y cortaba a mitad de frase en iPhone.
+        const loudTh = Math.max(speakTh, speechLvl*0.12, noiseLvl*1.7);
         speechLvl = Math.max(speechLvl*0.997, spoke || rms>speakTh ? rms : 0); // tu voz: sube rápido, baja lento
         // Voz real = al menos ~0,3 s sumados por encima del umbral (un golpe o un
         // roce del teléfono no cuenta como que hablaste).
