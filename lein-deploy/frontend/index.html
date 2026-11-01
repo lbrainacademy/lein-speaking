@@ -1081,7 +1081,7 @@
   const YOUR_TURN = "Tu turno: toca el micrófono 🎤";
   const TOPIC_TURN = "Dime de qué quieres hablar 🎤";
   const REPEAT_TURN = "Tu turno: repite la frase 🎤";
-  let repeatPending = false; // Lein pidió repetir una frase: el próximo turno del alumno es la repetición
+  let repeatPending = false, lastWasRepeating = false; // Lein pidió repetir una frase: el próximo turno del alumno es la repetición
   let micTips = 0; // la burbuja "Tócalo y habla" sale solo las primeras 3 veces
   function setStatus(text, wait){
     const s = document.getElementById("leinStatus"); if(!s) return;
@@ -1131,6 +1131,9 @@
     feed.querySelectorAll(".retrybtn").forEach(b=>b.remove());
 
     const isStudentTurn = !!text && !isOpening && !isRecap;
+    // ¿Este turno es la repetición que pidió Lein? (lo guardamos antes de que se apague el aviso)
+    const wasRepeating = isStudentTurn && (isRetry ? lastWasRepeating : repeatPending);
+    lastWasRepeating = wasRepeating;
     if (isStudentTurn && !isRetry){
       const me = addBubble(text, "me");
       turnSnap = { node: me, histLen: history.length, corrLen: sessionCorrections.length, day: loadDay(), repeat: repeatPending };
@@ -1155,7 +1158,8 @@
           recap: !!isRecap, errors: isRecap ? sessionCorrections.map(c=>c.text) : [],
           studentName: knownName || "",
           topic, voice: selectedVoice,
-          returning: !!isOpening && returningUser // "Seguir practicando": no volver a pedir el nombre
+          returning: !!isOpening && returningUser, // "Seguir practicando": no volver a pedir el nombre
+          repeating: wasRepeating                    // el alumno está repitiendo la frase corregida
         })
       });
       const data = await res.json();
@@ -1263,7 +1267,7 @@
     if(!html){ s.classList.remove("show"); s.innerHTML=""; return; }
     s.innerHTML=html; s.classList.add("show");
     const r=document.getElementById("micRetry");
-    if(r) r.onclick=()=>{ setMicStatus(""); mediaStream=null; startRecording(); };
+    if(r) r.onclick=()=>{ wakeVadCtx(); setMicStatus(""); mediaStream=null; startRecording(); };
   }
   function setMicUI(state){
     const b=document.getElementById("micBtn"); if(!b) return;
@@ -1370,11 +1374,21 @@
   }
 
   // Detector de voz: mide el ruido del lugar y corta solo cuando dejas de hablar.
+  // El "oído" del detector se crea UNA vez y se despierta EN EL TOQUE del micrófono.
+  // En iPhone, si se crea después (tras pedir el micrófono), queda dormido y solo
+  // "oye" silencio: por eso salía "No te escuché" aunque hablaras.
+  let vadCtx = null;
+  function wakeVadCtx(){
+    try{
+      if(!vadCtx) vadCtx = new (window.AudioContext||window.webkitAudioContext)();
+      if(vadCtx.state !== "running") vadCtx.resume();
+    }catch(e){}
+  }
+  let vadSrc = null;
   function startVAD(stream){
     try{
-      recAudioCtx=new (window.AudioContext||window.webkitAudioContext)();
-      if(recAudioCtx.state==="suspended"){ try{ recAudioCtx.resume(); }catch(e){} } // clave en móvil
-      const src=recAudioCtx.createMediaStreamSource(stream);
+      wakeVadCtx(); recAudioCtx = vadCtx;
+      const src=recAudioCtx.createMediaStreamSource(stream); vadSrc = src;
       const an=recAudioCtx.createAnalyser(); an.fftSize=512;
       src.connect(an);
       const data=new Uint8Array(an.fftSize);
@@ -1384,12 +1398,21 @@
       // mitad de frase. Si ya terminó, puede tocar ⏹ para enviar al instante.
       const SILENCE_MS = (level==="A1" || level==="A1+" || placementMode) ? 2200
                        : (level==="A2" || level==="B1") ? 1800 : 1400;
-      let floor=null, spoke=false, lastLoud=0, speechLvl=0, noiseLvl=null, sm=0, loudMs=0;
+      let floor=null, spoke=false, lastLoud=0, speechLvl=0, noiseLvl=null, sm=0, loudMs=0, maxRaw=0;
       vadInt=setInterval(()=>{
         if(!recording) return;
         an.getByteTimeDomainData(data);
         let sum=0; for(let i=0;i<data.length;i++){ const v=(data[i]-128)/128; sum+=v*v; }
         const raw=Math.sqrt(sum/data.length); const now=Date.now();
+        maxRaw = Math.max(maxRaw, raw);
+        // Seguro: si el "oído" no recibe NADA (señal plana), el detector no sirve en
+        // este equipo. Entonces no adivinamos: grabamos hasta que toque ⏹ (o 15 s)
+        // y mandamos el audio, en vez de decir "No te escuché".
+        if(now-t0>1500 && maxRaw<0.0008){
+          clearInterval(vadInt); vadInt=null;
+          setTimeout(()=>{ if(recording) stopRecording(); }, 13500);
+          return;
+        }
         sm = sm ? sm*0.5 + raw*0.5 : raw; const rms = sm; // suavizado: ignora chasquidos sueltos
         // Ruido del lugar = lo más bajo que se oye al inicio. Así, si el alumno
         // empieza a hablar enseguida, su voz NO se confunde con ruido.
@@ -1413,7 +1436,8 @@
       }, 60);
     }catch(e){ /* el tope de startRecording cierra si algo falla */ }
   }
-  function stopVAD(){ if(vadInt){ clearInterval(vadInt); vadInt=null; } if(recAudioCtx){ try{recAudioCtx.close();}catch(e){} recAudioCtx=null; } }
+  // Se desconecta el micrófono del "oído", pero el oído queda despierto para el próximo turno.
+  function stopVAD(){ if(vadInt){ clearInterval(vadInt); vadInt=null; } if(vadSrc){ try{ vadSrc.disconnect(); }catch(e){} vadSrc=null; } recAudioCtx=null; }
 
   function handleMicError(err){
     recording=false; setMicUI("idle");
@@ -1428,6 +1452,7 @@
   }
 
   document.getElementById("micBtn").onclick = ()=>{
+    wakeVadCtx(); // PRIMERO, dentro del toque (clave en iPhone)
     unlockAudio(); markActivity();
     if(recording) stopRecording(); // si lo detiene a mano, se envía lo grabado
     else startRecording();
