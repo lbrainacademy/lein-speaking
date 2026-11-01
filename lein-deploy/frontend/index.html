@@ -1527,7 +1527,15 @@
     document.getElementById("sumTitle").textContent = knownName ? `¡Buen trabajo hoy, ${knownName}!` : "¡Buen trabajo hoy!";
     document.getElementById("sumPhrases").textContent = day.phrases;
     document.getElementById("sumFixes").textContent = day.fixes.length;
-    document.getElementById("sumDays").textContent = Math.max(1, streakDays());
+    const nDays = Math.max(1, streakDays());
+    document.getElementById("sumDays").textContent = nDays;
+    // Singular o plural según el número ("1 día seguido", no "1 días seguidos").
+    const lbl = document.querySelectorAll(".sum-stat .k");
+    if (lbl.length === 3) {
+      lbl[0].textContent = day.phrases === 1 ? "frase que dijiste hoy" : "frases que dijiste hoy";
+      lbl[1].textContent = day.fixes.length === 1 ? "corrección aprendida" : "correcciones aprendidas";
+      lbl[2].textContent = nDays === 1 ? "día seguido practicando" : "días seguidos practicando";
+    }
     const list = document.getElementById("sumList");
     list.innerHTML = "";
     if (day.fixes.length){
