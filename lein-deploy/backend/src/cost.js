@@ -28,12 +28,14 @@ const num = (v, d) => (v === undefined || v === "" || isNaN(Number(v)) ? d : Num
 // Así el medidor muestra el costo REAL aunque cambies de modelo (Haiku/Sonnet/Opus).
 // Se puede forzar con env CLAUDE_USD_* si las tarifas cambian.
 const PRICES = {
+  haiku55:{ in: 0.10, out: 0.50, cw: 0.125, cr: 0.01 },   // Claude Haiku 5.5 (prompts <= 100K tokens)
   haiku:  { in: 1,  out: 5,  cw: 1.25,  cr: 0.10 },
   sonnet: { in: 3,  out: 15, cw: 3.75,  cr: 0.30 },
   opus:   { in: 15, out: 75, cw: 18.75, cr: 1.50 },
 };
-const MODEL_NAME = (process.env.MODEL || "claude-sonnet-4-6").toLowerCase();
-const family = MODEL_NAME.includes("haiku") ? "haiku"
+const MODEL_NAME = (process.env.MODEL || "claude-haiku-5-5").toLowerCase();
+const family = MODEL_NAME.includes("haiku-5") ? "haiku55"
+             : MODEL_NAME.includes("haiku") ? "haiku"
              : MODEL_NAME.includes("opus")  ? "opus"
              : "sonnet";
 const P = PRICES[family];

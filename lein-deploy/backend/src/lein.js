@@ -9,9 +9,9 @@ import Anthropic from "@anthropic-ai/sdk";
 import { getBrain, PLACEMENT_BRAIN, missionBlock } from "./brains.js";
 
 // Leemos el modelo cuando se usa (no al cargar el módulo), para que .env ya
-// esté cargado por dotenv. Default: Sonnet (costo-eficiente).
+// esté cargado por dotenv. Default: Claude Haiku 5.5.
 export function getModel() {
-  return process.env.MODEL || "claude-sonnet-4-6";
+  return process.env.MODEL || "claude-haiku-5-5"; // Haiku 5.5: más rápido y 10x más barato que Haiku 4.5
 }
 
 // Cliente perezoso: se crea en el primer uso, ya con la llave del .env cargada.
