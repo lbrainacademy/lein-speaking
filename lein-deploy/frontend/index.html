@@ -386,6 +386,18 @@
     font-weight:600;font-size:min(17px,4.1vw);white-space:nowrap;max-width:100%;color:#eef4ff;background:rgba(110,180,255,.12);border:2px solid rgba(140,200,255,.7);
     padding:14px 18px;border-radius:999px;box-shadow:0 0 14px rgba(80,160,255,.25)}
   #changeLevelBtn:active{transform:scale(.96)}
+
+  /* Ondas de voz (cuando Lein habla) */
+  .facewaves{position:absolute;left:50%;bottom:9%;transform:translateX(-50%);display:flex;align-items:center;gap:7px;
+    height:72px;padding:0 20px;border-radius:999px;background:rgba(8,19,41,.55);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+    opacity:0;transition:opacity .25s;z-index:2}
+  .facewaves i{display:block;width:8px;height:8px;border-radius:4px;background:linear-gradient(#9fd2ff,#F0731C);transition:height .12s ease}
+  .talking .facewaves{opacity:1}
+  .chatAvatar:has(.has-face) .facewaves{height:56px;gap:6px;padding:0 16px}
+  .chatAvatar:has(.has-face) .facewaves i{width:7px}
+  .talking .face{animation:voiceglow 1.2s ease-in-out infinite}
+  @keyframes voiceglow{0%,100%{box-shadow:0 0 0 2px #9fd2ff,0 0 24px 4px rgba(90,170,255,.45),inset 0 0 30px rgba(80,160,255,.35)}
+    50%{box-shadow:0 0 0 3px #b9deff,0 0 40px 12px rgba(90,170,255,.7),inset 0 0 30px rgba(80,160,255,.35)}}
 </style>
 </head>
 <body>
@@ -693,7 +705,8 @@
 
   // ---------- Cara de Lein (videos en lein/idle.mp4, listen.mp4, talk.mp4) ----------
   // Si los videos no están, se queda el cerebrito de siempre.
-  const FACE_FILES = { idle:"lein/idle.mp4", listening:"lein/listen.mp4", talking:"lein/talk.mp4" };
+  // Al hablar NO se usa video de boca (no coincide con la voz): se queda tranquila y salen ondas de voz.
+  const FACE_FILES = { idle:"lein/idle.mp4", listening:"lein/listen.mp4" };
   let faceReady = false;
   // Los videos se bajan completos y se usan como "blob": así funcionan en iPhone
   // aunque el servidor no mande el tipo de archivo ni soporte pedir por partes.
@@ -717,20 +730,33 @@
         if(st==="idle"){ v.src=idleUrl; v.classList.add("on"); v.autoplay=true; }
         f.appendChild(v);
       });
+      const w=document.createElement("div"); w.className="facewaves";
+      for(let i=0;i<9;i++) w.appendChild(document.createElement("i"));
+      f.appendChild(w);
       m.appendChild(f); faces.push(f);
       const o=document.createElement("div"); o.className="face-orbit"; m.appendChild(o);
       f.querySelector('video[data-st="idle"]').play().catch(()=>{});
     });
-    ["listening","talking"].forEach(st=>{
+    ["listening"].forEach(st=>{
       loadFaceBlob(FACE_FILES[st]).then(url=>{
         faces.forEach(f=>{ const v=f.querySelector(`video[data-st="${st}"]`); v.src=url; if(v.classList.contains("on")) v.play().catch(()=>{}); });
       }).catch(()=>{});
     });
   }).catch(()=>{});
+
+  // Ondas de voz sobre la cara mientras Lein habla
+  setInterval(()=>{
+    document.querySelectorAll(".talking .facewaves i").forEach(b=>{
+      const i = Array.prototype.indexOf.call(b.parentNode.children, b);
+      const mid = 1 - Math.abs(i-4)/5;
+      const max = b.parentNode.clientHeight - 14;
+      b.style.height = Math.max(8, (0.25 + Math.random()*0.75*mid + 0.15*mid) * max) + "px";
+    });
+  }, 120);
   function faceState(stageEl, state){
     if(!faceReady || !stageEl) return;
     const f = stageEl.querySelector(".face"); if(!f) return;
-    const want = (state==="listening"||state==="talking") ? state : "idle";
+    const want = state==="listening" ? "listening" : "idle";
     f.querySelectorAll("video").forEach(v=>{
       if(v.dataset.st===want){ if(v.paused){ try{ v.currentTime=0; }catch(e){} v.play().catch(()=>{}); } v.classList.add("on"); }
       else { v.classList.remove("on"); setTimeout(()=>{ if(!v.classList.contains("on")) v.pause(); }, 400); }
