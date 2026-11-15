@@ -542,6 +542,42 @@
   // El backend sirve este archivo, así que la API está en el MISMO origen.
   const API = "";
   const params = new URLSearchParams(location.search);
+  // ---------- Acceso: solo entrando desde la plataforma LBrain ----------
+  // La plataforma abre Lein con studentId + vence + firma. Esa llave va en cada
+  // llamada al servidor; sin ella (enlace directo, vencido o inventado) no se conversa.
+  const LEIN_KEY = (params.get("studentId") && params.get("exp") && params.get("sig"))
+    ? params.get("studentId") + "|" + params.get("exp") + "|" + params.get("sig") : "";
+  const PLATAFORMA_LEIN = "https://plataforma.lbrainacademy.com/custom/lein_go.php";
+  function showGate(){
+    if (document.getElementById("leinGate")) return;
+    try{ speechSynthesis.cancel(); }catch(e){}
+    const g = document.createElement("div");
+    g.id = "leinGate";
+    g.style.cssText = "position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;background:linear-gradient(180deg,#0a1a3a,#060e20);color:#eef4ff;text-align:center;font-family:'DM Sans',system-ui,sans-serif";
+    g.innerHTML = '<div style="max-width:380px"><div style="font-size:54px;margin-bottom:10px">🔒</div>'
+      + '<h2 style="font-family:Sora,sans-serif;font-size:24px;margin:0 0 10px">Entra a Lein desde tu plataforma</h2>'
+      + '<p style="font-size:17px;line-height:1.45;color:#c5d3ea;margin:0 0 22px">Para practicar con Lein, ábrelo desde tu plataforma LBrain con tu usuario.</p>'
+      + '<a href="' + PLATAFORMA_LEIN + '" style="display:inline-block;background:#F0731C;color:#fff;text-decoration:none;font-weight:700;font-size:18px;padding:14px 26px;border-radius:999px">Ir a mi plataforma</a></div>';
+    document.body.appendChild(g);
+  }
+  (function(){
+    const exp = Number(params.get("exp") || 0);
+    if (!LEIN_KEY || exp * 1000 < Date.now()) {
+      if (document.body) showGate(); else document.addEventListener("DOMContentLoaded", showGate);
+    }
+    const _fetch = window.fetch.bind(window);
+    window.fetch = function(input, init){
+      const u = typeof input === "string" ? input : (input && input.url) || "";
+      if (/(^|\/\/[^/]+)\/api\//.test(u) || u.startsWith("/api/")) {
+        init = Object.assign({}, init || {});
+        const h = new Headers(init.headers || {});
+        if (LEIN_KEY) h.set("X-Lein-Key", LEIN_KEY);
+        init.headers = h;
+        return _fetch(input, init).then(r => { if (r.status === 401) showGate(); return r; });
+      }
+      return _fetch(input, init);
+    };
+  })();
   const STUDENT_ID = params.get("studentId") || localStorage.getItem("lein_sid") || ("test-" + Math.random().toString(36).slice(2, 9));
   localStorage.setItem("lein_sid", STUDENT_ID);
   const STUDENT_NAME = params.get("name") || "";
