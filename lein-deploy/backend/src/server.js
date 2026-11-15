@@ -11,6 +11,7 @@
 
 import "./env.js"; // carga .env de PRIMERO (antes que lein.js/usage.js lean process.env)
 import http from "node:http";
+import crypto from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -37,6 +38,26 @@ const PORT = Number(process.env.PORT) || 8787;
 const GRACE_SECONDS = 90; // margen para terminar el último turno al llegar al tope
 const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS || "*";
 
+
+// --- Acceso firmado: solo se conversa con Lein entrando desde la plataforma LBrain.
+// La plataforma (custom/lein_go.php) firma "studentId|vence" con LEIN_LINK_SECRET.
+// El navegador manda esa llave en el encabezado X-Lein-Key = "studentId|vence|firma".
+// Sin llave válida no hay minutos nuevos: el tope de 10 min/día queda atado a la cuenta.
+const LINK_SECRET = process.env.LEIN_LINK_SECRET || "";
+function verifyLeinKey(raw) {
+  if (!LINK_SECRET) return { ok: true, sid: null }; // sin secreto configurado: modo abierto (como antes)
+  const parts = String(raw || "").split("|");
+  if (parts.length !== 3) return { ok: false };
+  const [sid, exp, sig] = parts;
+  if (!/^m\d+$/.test(sid) || !/^\d+$/.test(exp)) return { ok: false };
+  if (Number(exp) * 1000 < Date.now()) return { ok: false, expired: true };
+  const good = crypto.createHmac("sha256", LINK_SECRET).update(sid + "|" + exp).digest("hex");
+  const a = Buffer.from(good), b = Buffer.from(String(sig));
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return { ok: false };
+  return { ok: true, sid };
+}
+const PROTECTED = new Set(["/api/chat", "/api/stt", "/api/tts", "/api/tts/start", "/api/usage/ping", "/api/usage/status"]);
+
 // --- CORS: el frontend vivirá en otra URL, así que hay que permitir el origen.
 function setCors(res, origin) {
   const allow =
@@ -47,7 +68,7 @@ function setCors(res, origin) {
         : "";
   if (allow) res.setHeader("Access-Control-Allow-Origin", allow);
   res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Lein-Context, X-Lein-Key");
 }
 
 function sendJson(res, status, obj) {
@@ -203,6 +224,13 @@ const server = http.createServer(async (req, res) => {
     });
   }
 
+  // Llave de acceso (entra desde la plataforma). Fija el studentId al de la llave.
+  if (PROTECTED.has(url.pathname)) {
+    const v = verifyLeinKey(req.headers["x-lein-key"]);
+    if (!v.ok) return sendJson(res, 401, { error: "need_platform", expired: !!v.expired, message: "Entra a Lein desde tu plataforma LBrain." });
+    req.leinSid = v.sid;
+  }
+
   // Micrófono: audio del estudiante -> texto (Whisper de OpenAI).
   if (req.method === "POST" && url.pathname === "/api/stt") {
     if (!hasSTT()) {
@@ -231,7 +259,7 @@ const server = http.createServer(async (req, res) => {
         text = "";
       }
       // Medidor: costo (estimado) de la transcripción, atribuido al estudiante.
-      const sid = url.searchParams.get("studentId") || "anon";
+      const sid = (req.leinSid || url.searchParams.get("studentId")) || "anon";
       addCost(sid, sttCostUSD(buf.length), "stt");
       return sendJson(res, 200, { text });
     } catch (err) {
@@ -250,6 +278,7 @@ const server = http.createServer(async (req, res) => {
     try {
       const raw = await readBody(req);
       payload = raw ? JSON.parse(raw) : {};
+      if (req.leinSid) payload.studentId = req.leinSid;
     } catch {
       return sendJson(res, 400, { error: "bad_json" });
     }
@@ -278,6 +307,7 @@ const server = http.createServer(async (req, res) => {
     try {
       const raw = await readBody(req);
       payload = raw ? JSON.parse(raw) : {};
+      if (req.leinSid) payload.studentId = req.leinSid;
     } catch {
       return sendJson(res, 400, { error: "bad_json" });
     }
@@ -296,7 +326,7 @@ const server = http.createServer(async (req, res) => {
 
   // Estado de tiempo de un estudiante (cuánto le queda hoy).
   if (req.method === "GET" && url.pathname === "/api/usage/status") {
-    const studentId = url.searchParams.get("studentId");
+    const studentId = (req.leinSid || url.searchParams.get("studentId"));
     if (!studentId) {
       return sendJson(res, 400, { error: "missing_student_id", message: "Falta studentId." });
     }
@@ -338,6 +368,7 @@ const server = http.createServer(async (req, res) => {
     try {
       const raw = await readBody(req);
       payload = raw ? JSON.parse(raw) : {};
+      if (req.leinSid) payload.studentId = req.leinSid;
     } catch {
       return sendJson(res, 400, { error: "bad_json", message: "El cuerpo no es JSON válido." });
     }
@@ -354,6 +385,7 @@ const server = http.createServer(async (req, res) => {
     try {
       const raw = await readBody(req);
       payload = raw ? JSON.parse(raw) : {};
+      if (req.leinSid) payload.studentId = req.leinSid;
     } catch {
       return sendJson(res, 400, { error: "bad_json", message: "El cuerpo no es JSON válido." });
     }
