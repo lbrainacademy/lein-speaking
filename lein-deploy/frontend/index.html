@@ -1077,6 +1077,8 @@
 
   // Limpia el chat (al entrar o al volver atrás).
   function resetChat(){
+    // Corta también la respuesta de Lein que venga en camino (si no, habla en la pantalla de inicio).
+    if(chatCtrl){ try{ chatCtrl.abort(); }catch(e){} chatCtrl = null; }
     stopAllVoices();
     history = []; lastSay = ""; busy = false;
     sessionCorrections = []; recapDone = false;
@@ -1306,6 +1308,7 @@
         })
       });
       const data = await res.json();
+      if (!inChat()) { hideTyping(); return; } // ya salió del chat: Lein no debe seguir hablando
 
       if (data.limitReached){ hideTyping(); showSummary(); return; }
       if (data.error){ hideTyping(); showRetry(text, isOpening, isRecap); return; }
@@ -1372,6 +1375,7 @@
     }catch(err){
       if (undoing) return; // el alumno tocó "No dije eso": no es un error
       hideTyping();
+      if (!inChat()) return; // salió del chat: no mostrar "reintentar"
       showRetry(text, isOpening, isRecap);
     }finally{
       clearTimeout(chatTimer); chatCtrl = null;
