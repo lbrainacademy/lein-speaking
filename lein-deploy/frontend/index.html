@@ -398,10 +398,20 @@
   .talking .face{animation:voiceglow 1.2s ease-in-out infinite}
   @keyframes voiceglow{0%,100%{box-shadow:0 0 0 2px #9fd2ff,0 0 24px 4px rgba(90,170,255,.45),inset 0 0 30px rgba(80,160,255,.35)}
     50%{box-shadow:0 0 0 3px #b9deff,0 0 40px 12px rgba(90,170,255,.7),inset 0 0 30px rgba(80,160,255,.35)}}
+  /* LB_VOLVER_LBRAIN_v1: volver a la plataforma (Lein se abre en otra pestaña) */
+  .lbhome{position:fixed;top:max(14px,env(safe-area-inset-top));right:max(14px,env(safe-area-inset-right));z-index:2147483000;display:inline-flex;align-items:center;gap:6px;
+    padding:10px 16px;border-radius:999px;background:#FF8A00;color:#fff;font-family:'Sora',sans-serif;font-weight:700;font-size:15px;text-decoration:none;
+    box-shadow:0 6px 18px rgba(255,138,0,.35);border:0;cursor:pointer}
+  .lbhome:active{transform:scale(.96)}
+  body.lb-inchat .lbhome,body:has(#leinGate) .lbhome{display:none}
+  .lbhome-big{display:block;margin:18px auto 0;max-width:340px;width:100%;text-align:center;padding:15px 18px;border-radius:16px;background:#FF8A00;color:#fff;
+    font-family:'Sora',sans-serif;font-weight:700;font-size:17px;text-decoration:none;border:0;cursor:pointer}
 </style>
 </head>
 <body>
   <div class="labfx" id="labfx"></div>
+  <!-- LB_VOLVER_LBRAIN_v1 -->
+  <button type="button" class="lbhome" id="lbHome" aria-label="Volver a la plataforma LBrain">← Volver a LBrain</button>
 
   <!-- ====== Avatar SVG reutilizable (se clona) ====== -->
   <template id="avatarTpl">
@@ -534,6 +544,7 @@
       <div class="sum-sub">Lo que aprendiste hoy</div>
       <ul class="fixlist" id="sumList"></ul>
       <p class="lead" id="blockedMsg">Tu práctica de hoy terminó. ¡Nos vemos mañana! 👋</p>
+      <button type="button" class="lbhome-big" id="lbHomeBig">← Volver a LBrain</button>
     </div>
   </div>
 
@@ -968,6 +979,25 @@
     document.getElementById(id).classList.add("active");
   }
   const inChat = ()=> document.getElementById("chat").classList.contains("active");
+
+
+  // ---------- LB_VOLVER_LBRAIN_v1: volver a la plataforma ----------
+  // Lein se abre en otra pestaña desde LBrain: cerrar esta pestaña deja al estudiante justo donde estaba.
+  // Si el navegador no deja cerrarla, lo llevamos al inicio de la plataforma.
+  (function(){
+    const HOME = "https://plataforma.lbrainacademy.com/custom/inicio_nuevo.php";
+    function volver(){
+      try{ stopAllVoices(); }catch(e){}
+      try{ flushPractice(); }catch(e){}
+      try{ releaseMic(); }catch(e){}
+      try{ window.close(); }catch(e){}
+      setTimeout(function(){ if(!window.closed) location.href = HOME; }, 350);
+    }
+    ["lbHome","lbHomeBig"].forEach(function(id){ const b=document.getElementById(id); if(b) b.addEventListener("click", volver); });
+    const sync = ()=> document.body.classList.toggle("lb-inchat", inChat());
+    new MutationObserver(sync).observe(document.getElementById("chat"), {attributes:true, attributeFilter:["class"]});
+    sync();
+  })();
 
   // ---------- Aviso de navegador ----------
   if (typeof speechSynthesis === "undefined" && !window.Audio) {
