@@ -398,6 +398,10 @@
   .talking .face{animation:voiceglow 1.2s ease-in-out infinite}
   @keyframes voiceglow{0%,100%{box-shadow:0 0 0 2px #9fd2ff,0 0 24px 4px rgba(90,170,255,.45),inset 0 0 30px rgba(80,160,255,.35)}
     50%{box-shadow:0 0 0 3px #b9deff,0 0 40px 12px rgba(90,170,255,.7),inset 0 0 30px rgba(80,160,255,.35)}}
+  /* LB_CAMBIAR_NIVEL_CHAT_v1 */
+  .topbar .lvlbtn{display:block;max-width:100%;background:none;border:0;padding:2px 0;margin-top:4px;font:inherit;font-size:13px;color:#8fa3c4;
+    text-align:left;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .topbar .lvlbtn .lvlc{display:block;margin-top:3px;color:#f6a04d;font-weight:600;text-decoration:underline;text-underline-offset:3px}
   /* LB_VOLVER_LBRAIN_v1: volver a la plataforma (Lein se abre en otra pestaña) */
   .lbhome{position:fixed;top:max(14px,env(safe-area-inset-top));right:max(14px,env(safe-area-inset-right));z-index:2147483000;display:inline-flex;align-items:center;gap:6px;
     padding:10px 16px;border-radius:999px;background:#FF8A00;color:#fff;font-family:'Sora',sans-serif;font-weight:700;font-size:15px;text-decoration:none;
@@ -499,7 +503,7 @@
       <button class="backbtn" id="backBtn" title="Atrás" aria-label="Atrás">←</button>
       <div class="whobox">
         <div class="who">Lein</div>
-        <div class="lvl" id="levelLabel">A1</div>
+        <button class="lvl lvlbtn" id="lvlChange" title="Cambiar nivel" aria-label="Cambiar nivel"><span id="levelLabel">A1</span> <span class="lvlc">Cambiar nivel ▾</span></button>
       </div>
       <div class="timepill" id="timePill" title="Tu tiempo de práctica de hoy. Se pausa cuando no estás practicando.">10:00</div>
       <button id="textBtn" class="textpill" aria-pressed="true" title="Mostrar u ocultar el texto de Lein">Texto: Sí</button>
@@ -1156,6 +1160,15 @@
     document.getElementById("voiceSheet").classList.remove("show");
     document.getElementById("feed").innerHTML = "";
   }
+
+  // LB_CAMBIAR_NIVEL_CHAT_v1: desde el chat, tocar el nivel abre el selector de nivel.
+  document.getElementById("lvlChange").onclick = ()=>{
+    if(recording){ discardRec = true; stopRecording(); }
+    resetChat();
+    placementMode = false;
+    releaseMic();
+    show("levelScreen");
+  };
 
   // ---------- Botón de atrás (vuelve al inicio) ----------
   document.getElementById("backBtn").onclick = ()=>{
